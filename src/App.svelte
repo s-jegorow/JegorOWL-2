@@ -6,6 +6,13 @@ let isPlaying = $state(false);
 let frequency = $state(220);
 
 
+$effect(() => {
+  const currentFreq = frequency; 
+  if (oscillator) {
+    oscillator.frequency.value = currentFreq; 
+  }
+});
+
 function ensureAudioContext(): AudioContext {
   if (!audioContext) {
     audioContext = new AudioContext();
@@ -17,7 +24,7 @@ function startTone(): void {
   const ctx = ensureAudioContext();
   oscillator = ctx.createOscillator();
   oscillator.type = 'sine';
-  oscillator.frequency.value = 240;
+  oscillator.frequency.value = frequency;
   oscillator.connect(ctx.destination);
   oscillator.start();
   isPlaying = true;
@@ -44,7 +51,10 @@ function toggleTone(): void {
 
 <main>
   <h1>JegorOWL-2</h1>
-
+  
+  <input type="range" min="80" max="880" bind:value={frequency} />
+  <span>{frequency} Hz</span>
+  
   <button onclick={toggleTone}>
   {isPlaying ? '■ Stop' : '▶ Play'}
 </button>
