@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { SvelteSet } from 'svelte/reactivity';
   import * as engine from './audio/engine';
   import { noteName } from './audio/notes';
 
@@ -7,38 +8,26 @@
     g: 67, z: 68, y: 68, h: 69, u: 70, j: 71, k: 72,
   };
 
-  let activeNote: number | null = $state(null);
-  let isDrone = $state(false);
+  let activeNotes = $state(new SvelteSet<number>());
 
-  let frequency = $state(220);
-  let cutoff = $state(2000);
+  let waveform: OscillatorType = $state('sawtooth');
   let resonance = $state(1);
   let volume = $state(0.3);
+  let cutoff = $state(2000);
   let attack = $state(0.01);
   let decay = $state(0.2);
   let sustain = $state(0.6);
   let release = $state(0.4);
 
-  $effect(() => {
-    engine.setResonance(resonance);
-  });
-
-  $effect(() => {
-    engine.setFrequency(frequency);
-  });
+  $effect(() => { engine.setWaveform(waveform); });
+  $effect(() => { engine.setCutoff(cutoff); });
+  $effect(() => { engine.setResonance(resonance); });
+  $effect(() => { engine.setVolume(volume); });
 
   $effect(() => { engine.setAttack(attack); });
   $effect(() => { engine.setDecay(decay); });
   $effect(() => { engine.setSustain(sustain); });
   $effect(() => { engine.setRelease(release); });
-
-  $effect(() => {
-    engine.setCutoff(cutoff);
-  });
-
-  $effect(() => {
-    engine.setVolume(volume);
-  });
 
   let envelopePoints = $derived.by(() => {
     const viewW = 260;
@@ -80,7 +69,7 @@
     if (note === undefined) return;
 
     engine.noteOn(note);
-    activeNote = note;
+    activeNotes.add(note);
   }
 
   function handleKeyUp(event: KeyboardEvent): void {
@@ -88,23 +77,18 @@
     if (note === undefined) return;
 
     engine.noteOff(note);
-    if (activeNote === note) activeNote = null;
+    activeNotes.delete(note);
   }
 
   function handleBlur(): void {
     engine.allNotesOff();
-    activeNote = null;
+    activeNotes.clear();
   }
 
-  function toggleDrone(): void {
-    if (isDrone) {
-      engine.droneOff();
-      isDrone = false;
-    } else {
-      engine.droneOn();
-      isDrone = true;
-    }
-  }
+  let activeLabel = $derived.by(() => {
+    const notes = [...activeNotes].sort((a, b) => a - b);
+    return notes.map(noteName).join(' ');
+  });
 </script>
 
 <svelte:window
@@ -115,24 +99,23 @@
 
 <main>
   <h1>JegorOWL-2</h1>
-  <br/>
+  <br />
   <center>
-    <p class="status">{activeNote !== null ? noteName(activeNote) : '–'}</p>
-    <p class="hint">Spielen mit A S D F G H J K und W E T Z U</p>
-  </center>
-  <br/><br/>
-
-  <center>
-    <button onclick={toggleDrone}>
-      {isDrone ? '■ Drone aus' : '▶ Drone an'}
-    </button>
+    <p class="status">{activeLabel || '–'}</p>
+    <p class="hint">A S D F G H J K und W E T Z U · mehrere Tasten gleichzeitig für Akkorde</p>
   </center>
   <br/><br/>
 
   <label>
-    Frequenz: {frequency} Hz
-    <input type="range" min="50" max="1000" bind:value={frequency} />
+    Wellenform
+    <select bind:value={waveform}>
+      <option value="sine">Sine</option>
+      <option value="triangle">Triangle</option>
+      <option value="square">Square</option>
+      <option value="sawtooth">Sawtooth</option>
+    </select>
   </label>
+  <br/><br/>
 
   <label>
     Cutoff: {cutoff} Hz
@@ -156,7 +139,6 @@
       Attack: {attack.toFixed(3)} s
       <input type="range" min="0.001" max="2" step="0.001" bind:value={attack} />
     </label>
-
     <label>
       Decay: {decay.toFixed(2)} s
       <input type="range" min="0" max="2" step="0.01" bind:value={decay} />

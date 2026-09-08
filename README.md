@@ -3,4 +3,4 @@ Synth again (but more advanced). This time using Typescript and Svelte for clean
 
 So far we adjust the basic filters, adsr envelope (with a small visualization) and we can play notes. 
 
-next steps: polyphony and delay -> a decent readme -> all the jegorowl magic with owls and minigames.
+next steps: delay/reverb -> a decent readme -> all the jegorowl magic with owls and minigames.
