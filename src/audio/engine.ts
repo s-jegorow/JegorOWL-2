@@ -1,6 +1,8 @@
 import { getAudioContext } from './context';
 import { midiToFrequency } from './notes';
 import { Voice } from './voice';
+import { smooth } from './params';
+import { Delay, Reverb } from './effects';
 
 interface AudioChain {
   ctx: AudioContext;
@@ -17,10 +19,18 @@ interface EngineSettings {
   decay: number;
   sustain: number;
   release: number;
+  delayTime: number;
+  delayFeedback: number;
+  delayMix: number;
+  reverbSize: number;
+  reverbPreDelay: number;
+  reverbMix: number;
 }
 
 let filter: BiquadFilterNode | null = null;
 let masterGain: GainNode | null = null;
+let delay: Delay | null = null;
+let reverb: Reverb | null = null;
 
 // stuff thats playing + stuff thats fading out
 const voices = new Map<number, Voice>();
@@ -34,12 +44,18 @@ const settings: EngineSettings = {
   decay: 0.2,
   sustain: 0.6,
   release: 0.4,
+  delayTime: 0.35,
+  delayFeedback: 0.4,
+  delayMix: 0,
+  reverbSize: 2,
+  reverbPreDelay: 0.02,
+  reverbMix: 0,
 };
 
 function ensureChain(): AudioChain {
   const ctx = getAudioContext();
 
-  if (!filter || !masterGain) {
+  if (!filter || !masterGain || !delay || !reverb) {
     filter = ctx.createBiquadFilter();
     filter.type = 'lowpass';
     filter.frequency.value = settings.cutoff;
@@ -48,7 +64,21 @@ function ensureChain(): AudioChain {
     masterGain = ctx.createGain();
     masterGain.gain.value = settings.volume;
 
-    filter.connect(masterGain);
+    delay = new Delay(ctx, {
+      time: settings.delayTime,
+      feedback: settings.delayFeedback,
+      mix: settings.delayMix,
+    });
+
+    reverb = new Reverb(ctx, {
+      size: settings.reverbSize,
+      preDelay: settings.reverbPreDelay,
+      mix: settings.reverbMix,
+    });
+
+    filter.connect(delay.input);
+    delay.output.connect(reverb.input);
+    reverb.output.connect(masterGain);
     masterGain.connect(ctx.destination);
   }
 
@@ -90,15 +120,6 @@ export function setWaveform(value: OscillatorType): void {
   for (const voice of releasing) voice.setWaveform(value); // hit the fading ones too or it sounds weird
 }
 
-// slider liefern sprünge, direkt .value setzen knackt -> kurz hingleiten lassen (~30ms)
-const SMOOTHING = 0.01;
-
-function smooth(param: AudioParam, value: number): void {
-  const now = getAudioContext().currentTime;
-  param.cancelScheduledValues(now);
-  param.setTargetAtTime(value, now, SMOOTHING);
-}
-
 export function setCutoff(value: number): void {
   settings.cutoff = value;
   if (filter) smooth(filter.frequency, value);
@@ -117,3 +138,33 @@ export function setAttack(value: number): void { settings.attack = value; }
 export function setDecay(value: number): void { settings.decay = value; }
 export function setSustain(value: number): void { settings.sustain = value; }
 export function setRelease(value: number): void { settings.release = value; }
+
+export function setDelayTime(value: number): void {
+  settings.delayTime = value;
+  if (delay) delay.setTime(value);
+}
+
+export function setDelayFeedback(value: number): void {
+  settings.delayFeedback = value;
+  if (delay) delay.setFeedback(value);
+}
+
+export function setDelayMix(value: number): void {
+  settings.delayMix = value;
+  if (delay) delay.setMix(value);
+}
+
+export function setReverbSize(value: number): void {
+  settings.reverbSize = value;
+  if (reverb) reverb.setSize(value);
+}
+
+export function setReverbPreDelay(value: number): void {
+  settings.reverbPreDelay = value;
+  if (reverb) reverb.setPreDelay(value);
+}
+
+export function setReverbMix(value: number): void {
+  settings.reverbMix = value;
+  if (reverb) reverb.setMix(value);
+}

@@ -8,7 +8,7 @@ interface VoiceSettings {
 export class Voice {
   private readonly ctx: AudioContext;
   private readonly oscillator: OscillatorNode;
-  private readonly switchGain: GainNode; // eigener gain nur fürs declicken beim waveform-wechsel, damit die adsr-automation in ruhe gelassen wird
+  private readonly switchGain: GainNode; // own gain just for the declick on waveform switch, so the adsr automation stays untouched
   private readonly envelope: GainNode;
   private stopped = false;
 
@@ -61,7 +61,7 @@ export class Voice {
     };
   }
 
-  // läuft auch in der release-phase, der dip sitzt auf switchGain und lässt die release-rampe in ruhe
+  // works in the release phase too, the dip lives on switchGain so the release ramp keeps going
   setWaveform(value: OscillatorType): void {
     const now = this.ctx.currentTime;
     const g = this.switchGain.gain;

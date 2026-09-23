@@ -19,6 +19,14 @@
   let sustain = $state(0.6);
   let release = $state(0.4);
 
+  let delayTime = $state(0.35);
+  let delayFeedback = $state(0.4);
+  let delayMix = $state(0);
+
+  let reverbSize = $state(2);
+  let reverbPreDelay = $state(0.02);
+  let reverbMix = $state(0);
+
   $effect(() => { engine.setWaveform(waveform); });
   $effect(() => { engine.setCutoff(cutoff); });
   $effect(() => { engine.setResonance(resonance); });
@@ -28,6 +36,14 @@
   $effect(() => { engine.setDecay(decay); });
   $effect(() => { engine.setSustain(sustain); });
   $effect(() => { engine.setRelease(release); });
+
+  $effect(() => { engine.setDelayTime(delayTime); });
+  $effect(() => { engine.setDelayFeedback(delayFeedback); });
+  $effect(() => { engine.setDelayMix(delayMix); });
+
+  $effect(() => { engine.setReverbSize(reverbSize); });
+  $effect(() => { engine.setReverbPreDelay(reverbPreDelay); });
+  $effect(() => { engine.setReverbMix(reverbMix); });
 
   let envelopePoints = $derived.by(() => {
     const viewW = 260;
@@ -152,6 +168,46 @@
     <label>
       Release: {release.toFixed(2)} s
       <input type="range" min="0.01" max="3" step="0.01" bind:value={release} />
+    </label>
+  </section>
+  <br/><br/>
+
+  <section>
+    <h2>Delay</h2>
+
+    <label>
+      Time: {Math.round(delayTime * 1000)} ms
+      <input type="range" min="0.01" max="1" step="0.01" bind:value={delayTime} />
+    </label>
+
+    <label>
+      Feedback: {Math.round(delayFeedback * 100)}%
+      <input type="range" min="0" max="0.9" step="0.01" bind:value={delayFeedback} />
+    </label>
+
+    <label>
+      Mix: {Math.round(delayMix * 100)}%
+      <input type="range" min="0" max="1" step="0.01" bind:value={delayMix} />
+    </label>
+  </section>
+  <br/><br/>
+
+  <section>
+    <h2>Reverb</h2>
+
+    <label>
+      Size: {reverbSize.toFixed(1)} s
+      <input type="range" min="0.3" max="6" step="0.1" bind:value={reverbSize} />
+    </label>
+
+    <label>
+      Pre-Delay: {Math.round(reverbPreDelay * 1000)} ms
+      <input type="range" min="0" max="0.2" step="0.001" bind:value={reverbPreDelay} />
+    </label>
+
+    <label>
+      Mix: {Math.round(reverbMix * 100)}%
+      <input type="range" min="0" max="1" step="0.01" bind:value={reverbMix} />
     </label>
   </section>
   <br/><br/>
