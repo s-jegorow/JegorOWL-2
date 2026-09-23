@@ -8,6 +8,7 @@ interface VoiceSettings {
 export class Voice {
   private readonly ctx: AudioContext;
   private readonly oscillator: OscillatorNode;
+  private readonly switchGain: GainNode; // eigener gain nur fürs declicken beim waveform-wechsel, damit die adsr-automation in ruhe gelassen wird
   private readonly envelope: GainNode;
   private stopped = false;
 
@@ -20,12 +21,14 @@ export class Voice {
     const { waveform, attack, decay, sustain } = settings;
 
     this.oscillator = ctx.createOscillator();
+    this.switchGain = ctx.createGain();
     this.envelope = ctx.createGain();
 
     this.oscillator.type = waveform;
     this.oscillator.frequency.value = frequency;
 
-    this.oscillator.connect(this.envelope);
+    this.oscillator.connect(this.switchGain);
+    this.switchGain.connect(this.envelope);
     this.envelope.connect(filter);
 
     const g = this.envelope.gain;
@@ -52,22 +55,21 @@ export class Voice {
 
     this.oscillator.onended = () => {
       this.oscillator.disconnect();
+      this.switchGain.disconnect();
       this.envelope.disconnect();
       if (this.onended) this.onended();
     };
   }
 
+  // läuft auch in der release-phase, der dip sitzt auf switchGain und lässt die release-rampe in ruhe
   setWaveform(value: OscillatorType): void {
-    if (this.stopped) return;
-
     const now = this.ctx.currentTime;
-    const g = this.envelope.gain;
-    const current = g.value;
+    const g = this.switchGain.gain;
 
     g.cancelScheduledValues(now);
-    g.setValueAtTime(current, now);
-    g.linearRampToValueAtTime(current * 0.5, now + 0.003);
+    g.setValueAtTime(1, now);
+    g.linearRampToValueAtTime(0.5, now + 0.003);
     this.oscillator.type = value;
-    g.linearRampToValueAtTime(current, now + 0.006);
+    g.linearRampToValueAtTime(1, now + 0.006);
   }
 }

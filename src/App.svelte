@@ -100,10 +100,10 @@
 <main>
   <h1>JegorOWL-2</h1>
   <br />
-  <center>
+  <div>
     <p class="status">{activeLabel || '–'}</p>
     <p class="hint">A S D F G H J K und W E T Z U · mehrere Tasten gleichzeitig für Akkorde</p>
-  </center>
+  </div>
   <br/><br/>
 
   <label>
@@ -156,12 +156,12 @@
   </section>
   <br/><br/>
 
-  <center>
+  <div>
     <label>
       Lautstärke: {Math.round(volume * 100)}%
       <input type="range" min="0" max="1" step="0.01" bind:value={volume} />
     </label>
-  </center>
+  </div>
 </main>
 
 <style>

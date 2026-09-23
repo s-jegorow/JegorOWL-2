@@ -39,7 +39,7 @@ const settings: EngineSettings = {
 function ensureChain(): AudioChain {
   const ctx = getAudioContext();
 
-  if (!filter) {
+  if (!filter || !masterGain) {
     filter = ctx.createBiquadFilter();
     filter.type = 'lowpass';
     filter.frequency.value = settings.cutoff;
@@ -90,25 +90,30 @@ export function setWaveform(value: OscillatorType): void {
   for (const voice of releasing) voice.setWaveform(value); // hit the fading ones too or it sounds weird
 }
 
+// slider liefern sprünge, direkt .value setzen knackt -> kurz hingleiten lassen (~30ms)
+const SMOOTHING = 0.01;
+
+function smooth(param: AudioParam, value: number): void {
+  const now = getAudioContext().currentTime;
+  param.cancelScheduledValues(now);
+  param.setTargetAtTime(value, now, SMOOTHING);
+}
+
 export function setCutoff(value: number): void {
   settings.cutoff = value;
-  if (filter) filter.frequency.value = value;
+  if (filter) smooth(filter.frequency, value);
 }
 
 export function setResonance(value: number): void {
   settings.resonance = value;
-  if (filter) filter.Q.value = value;
+  if (filter) smooth(filter.Q, value);
 }
 export function setVolume(value: number): void {
   settings.volume = value;
-  if (masterGain) masterGain.gain.value = value;
+  if (masterGain) smooth(masterGain.gain, value);
 }
 
 export function setAttack(value: number): void { settings.attack = value; }
 export function setDecay(value: number): void { settings.decay = value; }
 export function setSustain(value: number): void { settings.sustain = value; }
 export function setRelease(value: number): void { settings.release = value; }
-
-export function activeNoteCount(): number {
-  return voices.size;
-}
