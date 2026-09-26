@@ -78,8 +78,16 @@ function ensureChain(): AudioChain {
 
     filter.connect(delay.input);
     delay.output.connect(reverb.input);
+    const limiter = ctx.createDynamicsCompressor();
+    limiter.threshold.value = -3;
+    limiter.knee.value = 0;
+    limiter.ratio.value = 20;
+    limiter.attack.value = 0.003;
+    limiter.release.value = 0.1;
+
     reverb.output.connect(masterGain);
-    masterGain.connect(ctx.destination);
+    masterGain.connect(limiter);
+    limiter.connect(ctx.destination);
   }
 
   return { ctx, filter, masterGain };

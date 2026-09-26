@@ -222,10 +222,6 @@
 
 <style>
   main {
-    font-family: monospace;
-    color: #e0e0e0;
-    background: #1a1a1a;
-    min-height: 100vh;
     padding: 2rem;
   }
   .status { font-size: 2rem; color: #7ad; margin: 0; min-height: 2.4rem; }
