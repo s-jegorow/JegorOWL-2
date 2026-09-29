@@ -14,7 +14,7 @@ export class Voice {
 
   onended: (() => void) | null = null;
 
-  constructor(ctx: AudioContext, filter: BiquadFilterNode, frequency: number, settings: VoiceSettings) {
+  constructor(ctx: AudioContext, output: AudioNode, frequency: number, settings: VoiceSettings) {
     this.ctx = ctx;
 
     const now = ctx.currentTime;
@@ -29,10 +29,9 @@ export class Voice {
 
     this.oscillator.connect(this.switchGain);
     this.switchGain.connect(this.envelope);
-    this.envelope.connect(filter);
+    this.envelope.connect(output);
 
     const g = this.envelope.gain;
-    g.cancelScheduledValues(now);
     g.setValueAtTime(0, now);
     g.linearRampToValueAtTime(1, now + attack);
     g.linearRampToValueAtTime(sustain, now + attack + decay);

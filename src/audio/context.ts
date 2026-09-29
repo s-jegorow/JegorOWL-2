@@ -1,4 +1,3 @@
-
 let audioContext: AudioContext | null = null;
 
 export function getAudioContext(): AudioContext {
@@ -6,8 +5,5 @@ export function getAudioContext(): AudioContext {
     audioContext = new AudioContext();
   }
 
-  if (audioContext.state === 'suspended') {
-    void audioContext.resume();
-  }
-
-  return audioContext;}
+  return audioContext;
+}

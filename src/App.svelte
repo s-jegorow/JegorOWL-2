@@ -1,31 +1,28 @@
 <script lang="ts">
   import { SvelteSet } from 'svelte/reactivity';
   import * as engine from './audio/engine';
-  import { noteName } from './audio/notes';
+  import { DEFAULT_SETTINGS } from './audio/engine';
+  import { KEY_MAP, noteName } from './audio/notes';
+  import EnvelopeGraph from './components/EnvelopeGraph.svelte';
 
-  const KEY_MAP: Record<string, number> = {
-    a: 60, w: 61, s: 62, e: 63, d: 64, f: 65, t: 66,
-    g: 67, z: 68, y: 68, h: 69, u: 70, j: 71, k: 72,
-  };
+  const activeNotes = new SvelteSet<number>();
 
-  let activeNotes = $state(new SvelteSet<number>());
+  let waveform = $state(DEFAULT_SETTINGS.waveform);
+  let resonance = $state(DEFAULT_SETTINGS.resonance);
+  let volume = $state(DEFAULT_SETTINGS.volume);
+  let cutoff = $state(DEFAULT_SETTINGS.cutoff);
+  let attack = $state(DEFAULT_SETTINGS.attack);
+  let decay = $state(DEFAULT_SETTINGS.decay);
+  let sustain = $state(DEFAULT_SETTINGS.sustain);
+  let release = $state(DEFAULT_SETTINGS.release);
 
-  let waveform: OscillatorType = $state('sawtooth');
-  let resonance = $state(1);
-  let volume = $state(0.3);
-  let cutoff = $state(2000);
-  let attack = $state(0.01);
-  let decay = $state(0.2);
-  let sustain = $state(0.6);
-  let release = $state(0.4);
+  let delayTime = $state(DEFAULT_SETTINGS.delayTime);
+  let delayFeedback = $state(DEFAULT_SETTINGS.delayFeedback);
+  let delayMix = $state(DEFAULT_SETTINGS.delayMix);
 
-  let delayTime = $state(0.35);
-  let delayFeedback = $state(0.4);
-  let delayMix = $state(0);
-
-  let reverbSize = $state(2);
-  let reverbPreDelay = $state(0.02);
-  let reverbMix = $state(0);
+  let reverbSize = $state(DEFAULT_SETTINGS.reverbSize);
+  let reverbPreDelay = $state(DEFAULT_SETTINGS.reverbPreDelay);
+  let reverbMix = $state(DEFAULT_SETTINGS.reverbMix);
 
   $effect(() => { engine.setWaveform(waveform); });
   $effect(() => { engine.setCutoff(cutoff); });
@@ -44,35 +41,6 @@
   $effect(() => { engine.setReverbSize(reverbSize); });
   $effect(() => { engine.setReverbPreDelay(reverbPreDelay); });
   $effect(() => { engine.setReverbMix(reverbMix); });
-
-  let envelopePoints = $derived.by(() => {
-    const viewW = 260;
-    const height = 60;
-    const pad = 4;
-    const sustainFrac = 0.25;
-
-    const inner = viewW - 2 * pad;
-    const timeW = inner * (1 - sustainFrac);
-    const sustainW = inner * sustainFrac;
-
-    const total = attack + decay + release || 1;
-    const aW = timeW * (attack / total);
-    const dW = timeW * (decay / total);
-    const rW = timeW * (release / total);
-
-    const bottom = height - pad;
-    const top = pad;
-    const sustainY = bottom - sustain * (bottom - top);
-
-    let x = pad;
-    const points: [number, number][] = [[x, bottom]];
-    x += aW; points.push([x, top]);
-    x += dW; points.push([x, sustainY]);
-    x += sustainW; points.push([x, sustainY]);
-    x += rW; points.push([x, bottom]);
-
-    return points.map(([px, py]) => `${px.toFixed(1)},${py.toFixed(1)}`).join(' ');
-  });
 
   //fix: ignore holddown-repeat
   function handleKeyDown(event: KeyboardEvent): void {
@@ -115,41 +83,40 @@
 
 <main>
   <h1>JegorOWL-2</h1>
-  <br />
-  <div>
+
+  <section>
     <p class="status">{activeLabel || '–'}</p>
-    <p class="hint">A S D F G H J K und W E T Z U · mehrere Tasten gleichzeitig für Akkorde</p>
-  </div>
-  <br/><br/>
+    <p class="hint">A S D F G H J K and W E T Z U · hold several keys for chords</p>
+  </section>
 
-  <label>
-    Wellenform
-    <select bind:value={waveform}>
-      <option value="sine">Sine</option>
-      <option value="triangle">Triangle</option>
-      <option value="square">Square</option>
-      <option value="sawtooth">Sawtooth</option>
-    </select>
-  </label>
-  <br/><br/>
+  <section>
+    <label>
+      Waveform
+      <select bind:value={waveform}>
+        <option value="sine">Sine</option>
+        <option value="triangle">Triangle</option>
+        <option value="square">Square</option>
+        <option value="sawtooth">Sawtooth</option>
+      </select>
+    </label>
+  </section>
 
-  <label>
-    Cutoff: {cutoff} Hz
-    <input type="range" min="50" max="12000" step="1" bind:value={cutoff} />
-  </label>
+  <section>
+    <label>
+      Cutoff: {cutoff} Hz
+      <input type="range" min="50" max="12000" step="1" bind:value={cutoff} />
+    </label>
 
-  <label>
-    Resonanz: {resonance}
-    <input type="range" min="0.5" max="20" step="0.1" bind:value={resonance} />
-  </label>
-  <br/><br/>
+    <label>
+      Resonance: {resonance}
+      <input type="range" min="0.5" max="20" step="0.1" bind:value={resonance} />
+    </label>
+  </section>
 
   <section>
     <h2>Envelope</h2>
 
-    <svg class="envelope" viewBox="0 0 260 60">
-      <polyline points={envelopePoints} fill="none" stroke="#7ad" stroke-width="2" />
-    </svg>
+    <EnvelopeGraph {attack} {decay} {sustain} {release} />
 
     <label>
       Attack: {attack.toFixed(3)} s
@@ -170,7 +137,6 @@
       <input type="range" min="0.01" max="3" step="0.01" bind:value={release} />
     </label>
   </section>
-  <br/><br/>
 
   <section>
     <h2>Delay</h2>
@@ -190,7 +156,6 @@
       <input type="range" min="0" max="1" step="0.01" bind:value={delayMix} />
     </label>
   </section>
-  <br/><br/>
 
   <section>
     <h2>Reverb</h2>
@@ -210,27 +175,22 @@
       <input type="range" min="0" max="1" step="0.01" bind:value={reverbMix} />
     </label>
   </section>
-  <br/><br/>
 
-  <div>
+  <section>
     <label>
-      Lautstärke: {Math.round(volume * 100)}%
+      Volume: {Math.round(volume * 100)}%
       <input type="range" min="0" max="1" step="0.01" bind:value={volume} />
     </label>
-  </div>
+  </section>
 </main>
 
 <style>
   main {
     padding: 2rem;
   }
+  section {
+    margin-bottom: 2rem;
+  }
   .status { font-size: 2rem; color: #7ad; margin: 0; min-height: 2.4rem; }
   .hint { font-size: 0.75rem; color: #666; margin-top: 0; }
-  .envelope {
-    width: 100%;
-    height: 60px;
-    background: #222;
-    border: 1px solid #333;
-    margin-top: 0.5rem;
-  }
 </style>

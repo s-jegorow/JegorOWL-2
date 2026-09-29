@@ -4,13 +4,7 @@ import { Voice } from './voice';
 import { smooth } from './params';
 import { Delay, Reverb } from './effects';
 
-interface AudioChain {
-  ctx: AudioContext;
-  filter: BiquadFilterNode;
-  masterGain: GainNode;
-}
-
-interface EngineSettings {
+export interface EngineSettings {
   waveform: OscillatorType;
   cutoff: number;
   resonance: number;
@@ -27,15 +21,7 @@ interface EngineSettings {
   reverbMix: number;
 }
 
-let filter: BiquadFilterNode | null = null;
-let masterGain: GainNode | null = null;
-let delay: Delay | null = null;
-let reverb: Reverb | null = null;
-
-// stuff thats playing + stuff thats fading out
-const voices = new Map<number, Voice>();
-const releasing = new Set<Voice>();
-const settings: EngineSettings = {
+export const DEFAULT_SETTINGS: EngineSettings = {
   waveform: 'sawtooth',
   cutoff: 2000,
   resonance: 1,
@@ -52,49 +38,74 @@ const settings: EngineSettings = {
   reverbMix: 0,
 };
 
-function ensureChain(): AudioChain {
+interface AudioChain {
+  ctx: AudioContext;
+  filter: BiquadFilterNode;
+  delay: Delay;
+  reverb: Reverb;
+  masterGain: GainNode;
+}
+
+let chain: AudioChain | null = null;
+
+// stuff thats playing + stuff thats fading out
+const voices = new Map<number, Voice>();
+const releasing = new Set<Voice>();
+const settings: EngineSettings = { ...DEFAULT_SETTINGS };
+
+function createChain(): AudioChain {
   const ctx = getAudioContext();
 
-  if (!filter || !masterGain || !delay || !reverb) {
-    filter = ctx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.value = settings.cutoff;
-    filter.Q.value = settings.resonance;
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = settings.cutoff;
+  filter.Q.value = settings.resonance;
 
-    masterGain = ctx.createGain();
-    masterGain.gain.value = settings.volume;
+  const delay = new Delay(ctx, {
+    time: settings.delayTime,
+    feedback: settings.delayFeedback,
+    mix: settings.delayMix,
+  });
 
-    delay = new Delay(ctx, {
-      time: settings.delayTime,
-      feedback: settings.delayFeedback,
-      mix: settings.delayMix,
-    });
+  const reverb = new Reverb(ctx, {
+    size: settings.reverbSize,
+    preDelay: settings.reverbPreDelay,
+    mix: settings.reverbMix,
+  });
 
-    reverb = new Reverb(ctx, {
-      size: settings.reverbSize,
-      preDelay: settings.reverbPreDelay,
-      mix: settings.reverbMix,
-    });
+  const masterGain = ctx.createGain();
+  masterGain.gain.value = settings.volume;
 
-    filter.connect(delay.input);
-    delay.output.connect(reverb.input);
-    const limiter = ctx.createDynamicsCompressor();
-    limiter.threshold.value = -3;
-    limiter.knee.value = 0;
-    limiter.ratio.value = 20;
-    limiter.attack.value = 0.003;
-    limiter.release.value = 0.1;
+  const limiter = ctx.createDynamicsCompressor();
+  limiter.threshold.value = -3;
+  limiter.knee.value = 0;
+  limiter.ratio.value = 20;
+  limiter.attack.value = 0.003;
+  limiter.release.value = 0.1;
 
-    reverb.output.connect(masterGain);
-    masterGain.connect(limiter);
-    limiter.connect(ctx.destination);
-  }
+  filter.connect(delay.input);
+  delay.output.connect(reverb.input);
+  reverb.output.connect(masterGain);
+  masterGain.connect(limiter);
+  limiter.connect(ctx.destination);
 
-  return { ctx, filter, masterGain };
+  return { ctx, filter, delay, reverb, masterGain };
+}
+
+function ensureChain(): AudioChain {
+  if (!chain) chain = createChain();
+  return chain;
+}
+
+function releaseVoice(voice: Voice, releaseTime: number): void {
+  releasing.add(voice);
+  voice.onended = () => releasing.delete(voice);
+  voice.release(releaseTime);
 }
 
 export function noteOn(note: number): void {
   const { ctx, filter } = ensureChain();
+  if (ctx.state === 'suspended') void ctx.resume();
   if (voices.has(note)) return; // key already down, skip
 
   const voice = new Voice(ctx, filter, midiToFrequency(note), settings);
@@ -106,19 +117,12 @@ export function noteOff(note: number): void {
   if (!voice) return;
 
   voices.delete(note); // yank it out now or the key gets stuck
-
-  releasing.add(voice);
-  voice.onended = () => releasing.delete(voice);
-  voice.release(settings.release);
+  releaseVoice(voice, settings.release);
 }
 
 export function allNotesOff(): void {
   // just kill everything, no release here
-  for (const voice of voices.values()) {
-    releasing.add(voice);
-    voice.onended = () => releasing.delete(voice);
-    voice.release(0.01);
-  }
+  for (const voice of voices.values()) releaseVoice(voice, 0.01);
   voices.clear();
 }
 
@@ -130,16 +134,17 @@ export function setWaveform(value: OscillatorType): void {
 
 export function setCutoff(value: number): void {
   settings.cutoff = value;
-  if (filter) smooth(filter.frequency, value);
+  if (chain) smooth(chain.filter.frequency, value);
 }
 
 export function setResonance(value: number): void {
   settings.resonance = value;
-  if (filter) smooth(filter.Q, value);
+  if (chain) smooth(chain.filter.Q, value);
 }
+
 export function setVolume(value: number): void {
   settings.volume = value;
-  if (masterGain) smooth(masterGain.gain, value);
+  if (chain) smooth(chain.masterGain.gain, value);
 }
 
 export function setAttack(value: number): void { settings.attack = value; }
@@ -149,30 +154,30 @@ export function setRelease(value: number): void { settings.release = value; }
 
 export function setDelayTime(value: number): void {
   settings.delayTime = value;
-  if (delay) delay.setTime(value);
+  if (chain) chain.delay.setTime(value);
 }
 
 export function setDelayFeedback(value: number): void {
   settings.delayFeedback = value;
-  if (delay) delay.setFeedback(value);
+  if (chain) chain.delay.setFeedback(value);
 }
 
 export function setDelayMix(value: number): void {
   settings.delayMix = value;
-  if (delay) delay.setMix(value);
+  if (chain) chain.delay.setMix(value);
 }
 
 export function setReverbSize(value: number): void {
   settings.reverbSize = value;
-  if (reverb) reverb.setSize(value);
+  if (chain) chain.reverb.setSize(value);
 }
 
 export function setReverbPreDelay(value: number): void {
   settings.reverbPreDelay = value;
-  if (reverb) reverb.setPreDelay(value);
+  if (chain) chain.reverb.setPreDelay(value);
 }
 
 export function setReverbMix(value: number): void {
   settings.reverbMix = value;
-  if (reverb) reverb.setMix(value);
+  if (chain) chain.reverb.setMix(value);
 }
