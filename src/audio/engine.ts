@@ -13,6 +13,11 @@ export interface EngineSettings {
   decay: number;
   sustain: number;
   release: number;
+  filterAmount: number;
+  filterAttack: number;
+  filterDecay: number;
+  filterSustain: number;
+  filterRelease: number;
   delayTime: number;
   delayFeedback: number;
   delayMix: number;
@@ -30,6 +35,11 @@ export const DEFAULT_SETTINGS: EngineSettings = {
   decay: 0.2,
   sustain: 0.6,
   release: 0.4,
+  filterAmount: 0,
+  filterAttack: 0.01,
+  filterDecay: 0.3,
+  filterSustain: 0,
+  filterRelease: 0.4,
   delayTime: 0.35,
   delayFeedback: 0.4,
   delayMix: 0,
@@ -40,7 +50,7 @@ export const DEFAULT_SETTINGS: EngineSettings = {
 
 interface AudioChain {
   ctx: AudioContext;
-  filter: BiquadFilterNode;
+  voiceBus: GainNode;
   delay: Delay;
   reverb: Reverb;
   masterGain: GainNode;
@@ -56,10 +66,7 @@ const settings: EngineSettings = { ...DEFAULT_SETTINGS };
 function createChain(): AudioChain {
   const ctx = getAudioContext();
 
-  const filter = ctx.createBiquadFilter();
-  filter.type = 'lowpass';
-  filter.frequency.value = settings.cutoff;
-  filter.Q.value = settings.resonance;
+  const voiceBus = ctx.createGain();
 
   const delay = new Delay(ctx, {
     time: settings.delayTime,
@@ -83,13 +90,13 @@ function createChain(): AudioChain {
   limiter.attack.value = 0.003;
   limiter.release.value = 0.1;
 
-  filter.connect(delay.input);
+  voiceBus.connect(delay.input);
   delay.output.connect(reverb.input);
   reverb.output.connect(masterGain);
   masterGain.connect(limiter);
   limiter.connect(ctx.destination);
 
-  return { ctx, filter, delay, reverb, masterGain };
+  return { ctx, voiceBus, delay, reverb, masterGain };
 }
 
 function ensureChain(): AudioChain {
@@ -97,18 +104,18 @@ function ensureChain(): AudioChain {
   return chain;
 }
 
-function releaseVoice(voice: Voice, releaseTime: number): void {
+function releaseVoice(voice: Voice, releaseTime: number, filterReleaseTime: number): void {
   releasing.add(voice);
   voice.onended = () => releasing.delete(voice);
-  voice.release(releaseTime);
+  voice.release(releaseTime, filterReleaseTime);
 }
 
 export function noteOn(note: number): void {
-  const { ctx, filter } = ensureChain();
+  const { ctx, voiceBus } = ensureChain();
   if (ctx.state === 'suspended') void ctx.resume();
   if (voices.has(note)) return; // key already down, skip
 
-  const voice = new Voice(ctx, filter, midiToFrequency(note), settings);
+  const voice = new Voice(ctx, voiceBus, midiToFrequency(note), settings);
   voices.set(note, voice);
 }
 
@@ -117,12 +124,12 @@ export function noteOff(note: number): void {
   if (!voice) return;
 
   voices.delete(note); // yank it out now or the key gets stuck
-  releaseVoice(voice, settings.release);
+  releaseVoice(voice, settings.release, settings.filterRelease);
 }
 
 export function allNotesOff(): void {
   // just kill everything, no release here
-  for (const voice of voices.values()) releaseVoice(voice, 0.01);
+  for (const voice of voices.values()) releaseVoice(voice, 0.01, 0.01);
   voices.clear();
 }
 
@@ -134,12 +141,14 @@ export function setWaveform(value: OscillatorType): void {
 
 export function setCutoff(value: number): void {
   settings.cutoff = value;
-  if (chain) smooth(chain.filter.frequency, value);
+  for (const voice of voices.values()) voice.setCutoff(value);
+  for (const voice of releasing) voice.setCutoff(value);
 }
 
 export function setResonance(value: number): void {
   settings.resonance = value;
-  if (chain) smooth(chain.filter.Q, value);
+  for (const voice of voices.values()) voice.setResonance(value);
+  for (const voice of releasing) voice.setResonance(value);
 }
 
 export function setVolume(value: number): void {
@@ -151,6 +160,12 @@ export function setAttack(value: number): void { settings.attack = value; }
 export function setDecay(value: number): void { settings.decay = value; }
 export function setSustain(value: number): void { settings.sustain = value; }
 export function setRelease(value: number): void { settings.release = value; }
+
+export function setFilterAmount(value: number): void { settings.filterAmount = value; }
+export function setFilterAttack(value: number): void { settings.filterAttack = value; }
+export function setFilterDecay(value: number): void { settings.filterDecay = value; }
+export function setFilterSustain(value: number): void { settings.filterSustain = value; }
+export function setFilterRelease(value: number): void { settings.filterRelease = value; }
 
 export function setDelayTime(value: number): void {
   settings.delayTime = value;

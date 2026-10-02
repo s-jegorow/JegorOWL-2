@@ -16,6 +16,12 @@
   let sustain = $state(DEFAULT_SETTINGS.sustain);
   let release = $state(DEFAULT_SETTINGS.release);
 
+  let filterAmount = $state(DEFAULT_SETTINGS.filterAmount);
+  let filterAttack = $state(DEFAULT_SETTINGS.filterAttack);
+  let filterDecay = $state(DEFAULT_SETTINGS.filterDecay);
+  let filterSustain = $state(DEFAULT_SETTINGS.filterSustain);
+  let filterRelease = $state(DEFAULT_SETTINGS.filterRelease);
+
   let delayTime = $state(DEFAULT_SETTINGS.delayTime);
   let delayFeedback = $state(DEFAULT_SETTINGS.delayFeedback);
   let delayMix = $state(DEFAULT_SETTINGS.delayMix);
@@ -33,6 +39,12 @@
   $effect(() => { engine.setDecay(decay); });
   $effect(() => { engine.setSustain(sustain); });
   $effect(() => { engine.setRelease(release); });
+
+  $effect(() => { engine.setFilterAmount(filterAmount); });
+  $effect(() => { engine.setFilterAttack(filterAttack); });
+  $effect(() => { engine.setFilterDecay(filterDecay); });
+  $effect(() => { engine.setFilterSustain(filterSustain); });
+  $effect(() => { engine.setFilterRelease(filterRelease); });
 
   $effect(() => { engine.setDelayTime(delayTime); });
   $effect(() => { engine.setDelayFeedback(delayFeedback); });
@@ -102,6 +114,8 @@
   </section>
 
   <section>
+    <h2>Filter</h2>
+
     <label>
       Cutoff: {cutoff} Hz
       <input type="range" min="50" max="12000" step="1" bind:value={cutoff} />
@@ -111,10 +125,36 @@
       Resonance: {resonance}
       <input type="range" min="0.5" max="20" step="0.1" bind:value={resonance} />
     </label>
+
+    <label>
+      Amount: {filterAmount.toFixed(1)} oct
+      <input type="range" min="0" max="6" step="0.1" bind:value={filterAmount} />
+    </label>
+
+    <EnvelopeGraph attack={filterAttack} decay={filterDecay} sustain={filterSustain} release={filterRelease} />
+
+    <label>
+      Attack: {filterAttack.toFixed(3)} s
+      <input type="range" min="0.001" max="2" step="0.001" bind:value={filterAttack} />
+    </label>
+    <label>
+      Decay: {filterDecay.toFixed(2)} s
+      <input type="range" min="0" max="2" step="0.01" bind:value={filterDecay} />
+    </label>
+
+    <label>
+      Sustain: {filterSustain.toFixed(2)}
+      <input type="range" min="0" max="1" step="0.01" bind:value={filterSustain} />
+    </label>
+
+    <label>
+      Release: {filterRelease.toFixed(2)} s
+      <input type="range" min="0.01" max="3" step="0.01" bind:value={filterRelease} />
+    </label>
   </section>
 
   <section>
-    <h2>Envelope</h2>
+    <h2>Amp Envelope</h2>
 
     <EnvelopeGraph {attack} {decay} {sustain} {release} />
 
