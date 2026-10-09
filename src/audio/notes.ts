@@ -1,3 +1,5 @@
+export const CENTS_PER_OCTAVE = 1200;
+
 export function midiToFrequency(note: number): number {
   return 440 * Math.pow(2, (note - 69) / 12);
 }

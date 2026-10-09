@@ -1,10 +1,11 @@
 import { smooth } from './params';
 import { triggerEnvelope, releaseEnvelope } from './envelope';
-
-const CENTS_PER_OCTAVE = 1200;
+import { CENTS_PER_OCTAVE } from './notes';
+import type { Lfo } from './lfo';
 
 interface VoiceSettings {
   waveform: OscillatorType;
+  filterType: BiquadFilterType;
   attack: number;
   decay: number;
   sustain: number;
@@ -22,12 +23,14 @@ export class Voice {
   private readonly switchGain: GainNode; // own gain just for the declick on waveform switch, so the adsr automation stays untouched
   private readonly filter: BiquadFilterNode;
   private readonly envelope: GainNode;
+  private readonly lfo: Lfo;
   private stopped = false;
 
   onended: (() => void) | null = null;
 
-  constructor(ctx: AudioContext, output: AudioNode, frequency: number, settings: VoiceSettings) {
+  constructor(ctx: AudioContext, output: AudioNode, lfo: Lfo, frequency: number, velocity: number, settings: VoiceSettings) {
     this.ctx = ctx;
+    this.lfo = lfo;
 
     const now = ctx.currentTime;
 
@@ -39,7 +42,7 @@ export class Voice {
     this.oscillator.type = settings.waveform;
     this.oscillator.frequency.value = frequency;
 
-    this.filter.type = 'lowpass';
+    this.filter.type = settings.filterType;
     this.filter.frequency.value = settings.cutoff;
     this.filter.Q.value = settings.resonance;
 
@@ -48,7 +51,10 @@ export class Voice {
     this.filter.connect(this.envelope);
     this.envelope.connect(output);
 
-    triggerEnvelope(this.envelope.gain, now, settings, 1);
+    lfo.filterOut.connect(this.filter.detune);
+    lfo.pitchOut.connect(this.oscillator.detune);
+
+    triggerEnvelope(this.envelope.gain, now, settings, velocity);
 
     // envelope goes on detune (cents) not frequency, so cutoff slider and envelope dont fight + octaves sweep evenly
     triggerEnvelope(this.filter.detune, now, {
@@ -72,12 +78,19 @@ export class Voice {
     this.oscillator.stop(now + releaseTime + 0.02);
 
     this.oscillator.onended = () => {
+      // only cut this voice's link, a bare disconnect() would kill the lfo for every voice
+      this.lfo.filterOut.disconnect(this.filter.detune);
+      this.lfo.pitchOut.disconnect(this.oscillator.detune);
       this.oscillator.disconnect();
       this.switchGain.disconnect();
       this.filter.disconnect();
       this.envelope.disconnect();
       if (this.onended) this.onended();
     };
+  }
+
+  setFilterType(value: BiquadFilterType): void {
+    this.filter.type = value;
   }
 
   setCutoff(value: number): void {

@@ -3,9 +3,11 @@ import { midiToFrequency } from './notes';
 import { Voice } from './voice';
 import { smooth } from './params';
 import { Delay, Reverb } from './effects';
+import { Lfo } from './lfo';
 
 export interface EngineSettings {
   waveform: OscillatorType;
+  filterType: BiquadFilterType;
   cutoff: number;
   resonance: number;
   volume: number;
@@ -18,6 +20,10 @@ export interface EngineSettings {
   filterDecay: number;
   filterSustain: number;
   filterRelease: number;
+  lfoRate: number;
+  lfoWaveform: OscillatorType;
+  lfoFilterDepth: number;
+  lfoPitchDepth: number;
   delayTime: number;
   delayFeedback: number;
   delayMix: number;
@@ -28,6 +34,7 @@ export interface EngineSettings {
 
 export const DEFAULT_SETTINGS: EngineSettings = {
   waveform: 'sawtooth',
+  filterType: 'lowpass',
   cutoff: 2000,
   resonance: 1,
   volume: 0.3,
@@ -40,6 +47,10 @@ export const DEFAULT_SETTINGS: EngineSettings = {
   filterDecay: 0.3,
   filterSustain: 0,
   filterRelease: 0.4,
+  lfoRate: 4,
+  lfoWaveform: 'sine',
+  lfoFilterDepth: 0,
+  lfoPitchDepth: 0,
   delayTime: 0.35,
   delayFeedback: 0.4,
   delayMix: 0,
@@ -51,6 +62,7 @@ export const DEFAULT_SETTINGS: EngineSettings = {
 interface AudioChain {
   ctx: AudioContext;
   voiceBus: GainNode;
+  lfo: Lfo;
   delay: Delay;
   reverb: Reverb;
   masterGain: GainNode;
@@ -67,6 +79,13 @@ function createChain(): AudioChain {
   const ctx = getAudioContext();
 
   const voiceBus = ctx.createGain();
+
+  const lfo = new Lfo(ctx, {
+    rate: settings.lfoRate,
+    waveform: settings.lfoWaveform,
+    filterDepth: settings.lfoFilterDepth,
+    pitchDepth: settings.lfoPitchDepth,
+  });
 
   const delay = new Delay(ctx, {
     time: settings.delayTime,
@@ -96,7 +115,7 @@ function createChain(): AudioChain {
   masterGain.connect(limiter);
   limiter.connect(ctx.destination);
 
-  return { ctx, voiceBus, delay, reverb, masterGain };
+  return { ctx, voiceBus, lfo, delay, reverb, masterGain };
 }
 
 function ensureChain(): AudioChain {
@@ -110,12 +129,17 @@ function releaseVoice(voice: Voice, releaseTime: number, filterReleaseTime: numb
   voice.release(releaseTime, filterReleaseTime);
 }
 
-export function noteOn(note: number): void {
-  const { ctx, voiceBus } = ensureChain();
+export function startAudio(): void {
+  const { ctx } = ensureChain();
+  if (ctx.state === 'suspended') void ctx.resume();
+}
+
+export function noteOn(note: number, velocity = 1): void {
+  const { ctx, voiceBus, lfo } = ensureChain();
   if (ctx.state === 'suspended') void ctx.resume();
   if (voices.has(note)) return; // key already down, skip
 
-  const voice = new Voice(ctx, voiceBus, midiToFrequency(note), settings);
+  const voice = new Voice(ctx, voiceBus, lfo, midiToFrequency(note), velocity, settings);
   voices.set(note, voice);
 }
 
@@ -137,6 +161,12 @@ export function setWaveform(value: OscillatorType): void {
   settings.waveform = value;
   for (const voice of voices.values()) voice.setWaveform(value);
   for (const voice of releasing) voice.setWaveform(value); // hit the fading ones too or it sounds weird
+}
+
+export function setFilterType(value: BiquadFilterType): void {
+  settings.filterType = value;
+  for (const voice of voices.values()) voice.setFilterType(value);
+  for (const voice of releasing) voice.setFilterType(value);
 }
 
 export function setCutoff(value: number): void {
@@ -166,6 +196,26 @@ export function setFilterAttack(value: number): void { settings.filterAttack = v
 export function setFilterDecay(value: number): void { settings.filterDecay = value; }
 export function setFilterSustain(value: number): void { settings.filterSustain = value; }
 export function setFilterRelease(value: number): void { settings.filterRelease = value; }
+
+export function setLfoRate(value: number): void {
+  settings.lfoRate = value;
+  if (chain) chain.lfo.setRate(value);
+}
+
+export function setLfoWaveform(value: OscillatorType): void {
+  settings.lfoWaveform = value;
+  if (chain) chain.lfo.setWaveform(value);
+}
+
+export function setLfoFilterDepth(value: number): void {
+  settings.lfoFilterDepth = value;
+  if (chain) chain.lfo.setFilterDepth(value);
+}
+
+export function setLfoPitchDepth(value: number): void {
+  settings.lfoPitchDepth = value;
+  if (chain) chain.lfo.setPitchDepth(value);
+}
 
 export function setDelayTime(value: number): void {
   settings.delayTime = value;
