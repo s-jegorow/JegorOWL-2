@@ -4,6 +4,7 @@
   import { DEFAULT_SETTINGS } from './audio/engine';
   import { KEY_MAP, noteName } from './audio/notes';
   import EnvelopeGraph from './components/EnvelopeGraph.svelte';
+  import Oscilloscope from './components/Oscilloscope.svelte';
   import {
     loadLastSettings,
     saveLastSettings,
@@ -179,19 +180,23 @@
 <main>
   <h1>JegorOWL-2</h1>
 
-  <section>
+  <section class="wide">
     <p class="status">{activeLabel || '–'}</p>
     <p class="hint">A S D F G H J K and W E T Z U · hold several keys for chords</p>
   </section>
 
-  <section>
+  <section class="wide">
+    <Oscilloscope />
+  </section>
+
+  <section class="wide">
     <h2>MIDI</h2>
 
     <button onclick={enableMidi} disabled={!midiSupported || midiEnabled}>Enable MIDI</button>
     <p class="hint">{midiStatus}</p>
   </section>
 
-  <section>
+  <section class="wide">
     <h2>Presets</h2>
 
     <label>
@@ -225,6 +230,8 @@
   </section>
 
   <section>
+    <h2>Osc</h2>
+
     <label>
       Waveform
       <select bind:value={settings.waveform}>
@@ -389,6 +396,8 @@
   </section>
 
   <section>
+    <h2>Master</h2>
+
     <label>
       Volume: {Math.round(settings.volume * 100)}%
       <input type="range" min="0" max="1" step="0.01" bind:value={settings.volume} />
@@ -399,10 +408,20 @@
 <style>
   main {
     padding: 2rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1.25rem 1.5rem;
+    align-items: start;
   }
-  section {
-    margin-bottom: 2rem;
+  h1, .wide {
+    grid-column: 1 / -1;
   }
+  h1 { margin: 0; }
+  section { margin: 0; }
+  h2 { font-size: 0.9rem; margin: 0 0 0.4rem; }
+  label { display: block; font-size: 0.75rem; margin-bottom: 0.3rem; }
+  input[type='range'] { display: block; width: 100%; margin: 0.1rem 0 0; }
+  .wide label { display: inline-block; margin-right: 0.5rem; }
   .status { font-size: 2rem; color: #7ad; margin: 0; min-height: 2.4rem; }
   .hint { font-size: 0.75rem; color: #666; margin-top: 0; }
 </style>

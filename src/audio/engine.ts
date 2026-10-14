@@ -59,6 +59,8 @@ export const DEFAULT_SETTINGS: EngineSettings = {
   reverbMix: 0,
 };
 
+export const ANALYSER_SIZE = 2048;
+
 interface AudioChain {
   ctx: AudioContext;
   voiceBus: GainNode;
@@ -66,6 +68,7 @@ interface AudioChain {
   delay: Delay;
   reverb: Reverb;
   masterGain: GainNode;
+  analyser: AnalyserNode;
 }
 
 let chain: AudioChain | null = null;
@@ -109,18 +112,26 @@ function createChain(): AudioChain {
   limiter.attack.value = 0.003;
   limiter.release.value = 0.1;
 
+  const analyser = ctx.createAnalyser();
+  analyser.fftSize = ANALYSER_SIZE;
+
   voiceBus.connect(delay.input);
   delay.output.connect(reverb.input);
   reverb.output.connect(masterGain);
+  reverb.output.connect(analyser);
   masterGain.connect(limiter);
   limiter.connect(ctx.destination);
 
-  return { ctx, voiceBus, lfo, delay, reverb, masterGain };
+  return { ctx, voiceBus, lfo, delay, reverb, masterGain, analyser };
 }
 
 function ensureChain(): AudioChain {
   if (!chain) chain = createChain();
   return chain;
+}
+
+export function getAnalyser(): AnalyserNode | null {
+  return chain ? chain.analyser : null;
 }
 
 function releaseVoice(voice: Voice, releaseTime: number, filterReleaseTime: number): void {

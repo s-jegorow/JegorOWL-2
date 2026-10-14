@@ -44,8 +44,10 @@
 
 <style>
   .envelope {
+    display: block;
     width: 100%;
-    height: 60px;
+    height: auto;
+    max-width: 180px;
     background: #222;
     border: 1px solid #333;
     margin-top: 0.5rem;
