@@ -185,6 +185,7 @@ export class Reverb {
     this.room = newRoom;
 
     setTimeout(() => {
+      this.preDelayNode.disconnect(oldRoom.feed);
       oldRoom.feed.disconnect();
       oldRoom.convolver.disconnect();
     }, (SWITCH_FADE + oldTail) * 1000 + 100);

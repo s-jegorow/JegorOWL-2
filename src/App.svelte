@@ -144,23 +144,29 @@
   function handleKeyDown(event: KeyboardEvent): void {
     if (event.repeat) return;
 
+    if (event.key === 'Meta') {
+      releaseAllNotes();
+      return;
+    }
+    if (event.metaKey) return;
+
     const tag = (event.target as HTMLElement).tagName;
     if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
 
-    const note = KEY_MAP[event.key.toLowerCase()];
+    const note = KEY_MAP[event.code];
     if (note === undefined) return;
 
     startNote(note);
   }
 
   function handleKeyUp(event: KeyboardEvent): void {
-    const note = KEY_MAP[event.key.toLowerCase()];
+    const note = KEY_MAP[event.code];
     if (note === undefined) return;
 
     stopNote(note);
   }
 
-  function handleBlur(): void {
+  function releaseAllNotes(): void {
     engine.allNotesOff();
     activeNotes.clear();
   }
@@ -174,7 +180,7 @@
 <svelte:window
   onkeydown={handleKeyDown}
   onkeyup={handleKeyUp}
-  onblur={handleBlur}
+  onblur={releaseAllNotes}
 />
 
 <main>

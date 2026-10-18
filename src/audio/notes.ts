@@ -13,6 +13,6 @@ export function noteName(note: number): string {
 }
 
 export const KEY_MAP: Record<string, number> = {
-  a: 60, w: 61, s: 62, e: 63, d: 64, f: 65, t: 66,
-  g: 67, z: 68, y: 68, h: 69, u: 70, j: 71, k: 72,
+  KeyA: 60, KeyW: 61, KeyS: 62, KeyE: 63, KeyD: 64, KeyF: 65, KeyT: 66,
+  KeyG: 67, KeyY: 68, KeyH: 69, KeyU: 70, KeyJ: 71, KeyK: 72,
 };
