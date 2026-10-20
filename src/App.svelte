@@ -15,6 +15,8 @@
     type Preset,
   } from './presets';
   import { isMidiSupported, connectMidi } from './midi';
+  import { isSerialSupported, connectSerial } from './serial';
+  import { createControls } from './controls';
 
   const activeNotes = new SvelteSet<number>();
 
@@ -28,6 +30,10 @@
   const midiSupported = isMidiSupported();
   let midiEnabled = $state(false);
   let midiStatus = $state(midiSupported ? 'Not enabled' : 'Not supported in this browser');
+  
+  const serialSupported = isSerialSupported();
+  let serialConnected = $state(false);
+  let serialStatus = $state(serialSupported ? 'Not connected' : 'Not supported in this browser');
 
   $effect(() => { saveLastSettings(settings); });
   $effect(() => { savePresets(presets); });
@@ -140,6 +146,32 @@
     }
   }
 
+const controls = createControls({ settings, startNote, stopNote });
+
+function handleControl(name: string, value: number): void {
+  const handler = controls[name];
+  if (handler) handler(value);
+}
+
+async function connectArduino(): Promise<void> {
+  engine.startAudio();
+
+  try {
+    await connectSerial({
+      control: handleControl,
+      disconnected: () => {
+        serialConnected = false;
+        serialStatus = 'Disconnected';
+      },
+    });
+    serialConnected = true;
+    serialStatus = 'Connected';
+  } catch {
+    serialStatus = 'Could not connect';
+  }
+}
+
+
   //fix: ignore holddown-repeat
   function handleKeyDown(event: KeyboardEvent): void {
     if (event.repeat) return;
@@ -200,6 +232,13 @@
 
     <button onclick={enableMidi} disabled={!midiSupported || midiEnabled}>Enable MIDI</button>
     <p class="hint">{midiStatus}</p>
+  </section>
+
+  <section class="wide">
+  <h2>Arduino</h2>
+
+  <button onclick={connectArduino} disabled={!serialSupported || serialConnected}>Connect Arduino</button>
+  <p class="hint">{serialStatus}</p>
   </section>
 
   <section class="wide">
@@ -423,11 +462,27 @@
     grid-column: 1 / -1;
   }
   h1 { margin: 0; }
-  section { margin: 0; }
-  h2 { font-size: 0.9rem; margin: 0 0 0.4rem; }
+  section {
+    margin: 0;
+    padding: 0.75rem;
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius);
+  }
+  h2 {
+    font-size: 0.9rem;
+    margin: 0 0 0.6rem;
+    padding-bottom: 0.3rem;
+    border-bottom: 1px solid var(--color-line);
+  }
   label { display: block; font-size: 0.75rem; margin-bottom: 0.3rem; }
   input[type='range'] { display: block; width: 100%; margin: 0.1rem 0 0; }
   .wide label { display: inline-block; margin-right: 0.5rem; }
-  .status { font-size: 2rem; color: #7ad; margin: 0; min-height: 2.4rem; }
-  .hint { font-size: 0.75rem; color: #666; margin-top: 0; }
+  .status {
+    font-size: 2rem;
+    color: var(--color-accent);
+    text-shadow: var(--glow-text);
+    margin: 0;
+    min-height: 2.4rem;
+  }
+  .hint { font-size: 0.75rem; color: var(--color-muted); margin-top: 0; }
 </style>

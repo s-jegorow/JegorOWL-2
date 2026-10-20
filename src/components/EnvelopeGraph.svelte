@@ -39,7 +39,7 @@
 </script>
 
 <svg class="envelope" viewBox="0 0 260 60">
-  <polyline {points} fill="none" stroke="#7ad" stroke-width="2" />
+  <polyline {points} fill="none" stroke-width="2" />
 </svg>
 
 <style>
@@ -48,8 +48,13 @@
     width: 100%;
     height: auto;
     max-width: 180px;
-    background: #222;
-    border: 1px solid #333;
+    background: var(--color-surface);
+    border: 1px solid var(--color-line);
     margin-top: 0.5rem;
+  }
+
+  /* stroke lives here, attributes can't do var() */
+  polyline {
+    stroke: var(--color-accent);
   }
 </style>

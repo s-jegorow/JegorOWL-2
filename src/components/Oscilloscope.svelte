@@ -7,6 +7,22 @@
 
   let canvas: HTMLCanvasElement;
 
+  interface ScopeColors {
+    background: string;
+    grid: string;
+    line: string;
+  }
+
+  // canvas can't do var(), so grab the tokens once
+  function readColors(element: HTMLElement): ScopeColors {
+    const style = getComputedStyle(element);
+    return {
+      background: style.getPropertyValue('--color-surface').trim(),
+      grid: style.getPropertyValue('--color-line').trim(),
+      line: style.getPropertyValue('--color-accent').trim(),
+    };
+  }
+
   function findTrigger(data: Float32Array): number {
     const searchEnd = data.length - SAMPLES_SHOWN;
     for (let i = 1; i < searchEnd; i++) {
@@ -16,11 +32,11 @@
     return 0;
   }
 
-  function draw(pen: CanvasRenderingContext2D, data: Float32Array): void {
-    pen.fillStyle = '#222';
+  function draw(pen: CanvasRenderingContext2D, data: Float32Array, colors: ScopeColors): void {
+    pen.fillStyle = colors.background;
     pen.fillRect(0, 0, WIDTH, HEIGHT);
 
-    pen.strokeStyle = '#333';
+    pen.strokeStyle = colors.grid;
     pen.lineWidth = 1;
     pen.beginPath();
     pen.moveTo(0, HEIGHT / 2);
@@ -29,8 +45,10 @@
 
     const start = findTrigger(data);
 
-    pen.strokeStyle = '#7ad';
+    pen.strokeStyle = colors.line;
     pen.lineWidth = 2;
+    pen.shadowColor = colors.line;
+    pen.shadowBlur = 6;
     pen.beginPath();
     for (let i = 0; i < SAMPLES_SHOWN; i++) {
       const x = (i / (SAMPLES_SHOWN - 1)) * WIDTH;
@@ -39,19 +57,21 @@
       else pen.lineTo(x, y);
     }
     pen.stroke();
+    pen.shadowBlur = 0;
   }
 
   $effect(() => {
     const pen = canvas.getContext('2d');
     if (!pen) return;
 
+    const colors = readColors(canvas);
     const data = new Float32Array(ANALYSER_SIZE);
     let frameId = 0;
 
     const frame = (): void => {
       const analyser = getAnalyser();
       if (analyser) analyser.getFloatTimeDomainData(data);
-      draw(pen, data);
+      draw(pen, data, colors);
       frameId = requestAnimationFrame(frame);
     };
 
@@ -67,6 +87,6 @@
     display: block;
     width: 100%;
     height: 120px;
-    border: 1px solid #333;
+    border: 1px solid var(--color-line);
   }
 </style>
