@@ -5,6 +5,7 @@
   import { KEY_MAP, noteName } from './audio/notes';
   import EnvelopeGraph from './components/EnvelopeGraph.svelte';
   import Oscilloscope from './components/Oscilloscope.svelte';
+  import Panel from './components/ui/Panel.svelte';
   import {
     loadLastSettings,
     saveLastSettings,
@@ -218,51 +219,49 @@ async function connectArduino(): Promise<void> {
 <main>
   <h1>JegorOWL-2</h1>
 
-  <section class="wide">
+  <Panel wide>
     <p class="status">{activeLabel || '–'}</p>
     <p class="hint">A S D F G H J K and W E T Z U · hold several keys for chords</p>
-  </section>
+  </Panel>
 
-  <section class="wide">
+  <Panel wide>
     <Oscilloscope />
-  </section>
+  </Panel>
 
-  <section class="wide">
-    <h2>MIDI</h2>
-
+  <Panel title="MIDI">
     <button onclick={enableMidi} disabled={!midiSupported || midiEnabled}>Enable MIDI</button>
     <p class="hint">{midiStatus}</p>
-  </section>
+  </Panel>
 
-  <section class="wide">
-  <h2>Arduino</h2>
+  <Panel title="Arduino">
+    <button onclick={connectArduino} disabled={!serialSupported || serialConnected}>Connect Arduino</button>
+    <p class="hint">{serialStatus}</p>
+  </Panel>
 
-  <button onclick={connectArduino} disabled={!serialSupported || serialConnected}>Connect Arduino</button>
-  <p class="hint">{serialStatus}</p>
-  </section>
+  <Panel title="Presets" wide>
+    <div class="row">
+      <label>
+        Preset
+        <select bind:value={selectedPreset}>
+          <option value="">–</option>
+          {#each presets as preset (preset.name)}
+            <option value={preset.name}>{preset.name}</option>
+          {/each}
+        </select>
+      </label>
+      <button onclick={loadPreset} disabled={selectedPreset === ''}>Load</button>
+      <button onclick={deletePreset} disabled={selectedPreset === ''}>Delete</button>
+    </div>
 
-  <section class="wide">
-    <h2>Presets</h2>
+    <div class="row">
+      <label>
+        Name
+        <input type="text" bind:value={presetName} />
+      </label>
+      <button onclick={savePreset} disabled={presetName.trim() === ''}>Save</button>
+    </div>
 
-    <label>
-      Preset
-      <select bind:value={selectedPreset}>
-        <option value="">–</option>
-        {#each presets as preset (preset.name)}
-          <option value={preset.name}>{preset.name}</option>
-        {/each}
-      </select>
-    </label>
-    <button onclick={loadPreset} disabled={selectedPreset === ''}>Load</button>
-    <button onclick={deletePreset} disabled={selectedPreset === ''}>Delete</button>
-
-    <label>
-      Name
-      <input type="text" bind:value={presetName} />
-    </label>
-    <button onclick={savePreset} disabled={presetName.trim() === ''}>Save</button>
-
-    <div>
+    <div class="row">
       <button onclick={() => downloadPresets(presets)} disabled={presets.length === 0}>Export</button>
       <label>
         Import
@@ -272,11 +271,9 @@ async function connectArduino(): Promise<void> {
     </div>
 
     <p class="hint">{presetMessage}</p>
-  </section>
+  </Panel>
 
-  <section>
-    <h2>Osc</h2>
-
+  <Panel title="Osc">
     <label>
       Waveform
       <select bind:value={settings.waveform}>
@@ -286,11 +283,9 @@ async function connectArduino(): Promise<void> {
         <option value="sawtooth">Sawtooth</option>
       </select>
     </label>
-  </section>
+  </Panel>
 
-  <section>
-    <h2>Filter</h2>
-
+  <Panel title="Filter">
     <label>
       Type
       <select bind:value={settings.filterType}>
@@ -341,11 +336,9 @@ async function connectArduino(): Promise<void> {
       Release: {settings.filterRelease.toFixed(2)} s
       <input type="range" min="0.01" max="3" step="0.01" bind:value={settings.filterRelease} />
     </label>
-  </section>
+  </Panel>
 
-  <section>
-    <h2>Amp Envelope</h2>
-
+  <Panel title="Amp Envelope">
     <EnvelopeGraph
       attack={settings.attack}
       decay={settings.decay}
@@ -371,11 +364,9 @@ async function connectArduino(): Promise<void> {
       Release: {settings.release.toFixed(2)} s
       <input type="range" min="0.01" max="3" step="0.01" bind:value={settings.release} />
     </label>
-  </section>
+  </Panel>
 
-  <section>
-    <h2>LFO</h2>
-
+  <Panel title="LFO">
     <label>
       Waveform
       <select bind:value={settings.lfoWaveform}>
@@ -400,11 +391,9 @@ async function connectArduino(): Promise<void> {
       Pitch Depth: {settings.lfoPitchDepth} cents
       <input type="range" min="0" max="100" step="1" bind:value={settings.lfoPitchDepth} />
     </label>
-  </section>
+  </Panel>
 
-  <section>
-    <h2>Delay</h2>
-
+  <Panel title="Delay">
     <label>
       Time: {Math.round(settings.delayTime * 1000)} ms
       <input type="range" min="0.01" max="1" step="0.01" bind:value={settings.delayTime} />
@@ -419,11 +408,9 @@ async function connectArduino(): Promise<void> {
       Mix: {Math.round(settings.delayMix * 100)}%
       <input type="range" min="0" max="1" step="0.01" bind:value={settings.delayMix} />
     </label>
-  </section>
+  </Panel>
 
-  <section>
-    <h2>Reverb</h2>
-
+  <Panel title="Reverb">
     <label>
       Size: {settings.reverbSize.toFixed(1)} s
       <input type="range" min="0.3" max="6" step="0.1" bind:value={settings.reverbSize} />
@@ -438,16 +425,14 @@ async function connectArduino(): Promise<void> {
       Mix: {Math.round(settings.reverbMix * 100)}%
       <input type="range" min="0" max="1" step="0.01" bind:value={settings.reverbMix} />
     </label>
-  </section>
+  </Panel>
 
-  <section>
-    <h2>Master</h2>
-
+  <Panel title="Master">
     <label>
       Volume: {Math.round(settings.volume * 100)}%
       <input type="range" min="0" max="1" step="0.01" bind:value={settings.volume} />
     </label>
-  </section>
+  </Panel>
 </main>
 
 <style>
@@ -458,25 +443,13 @@ async function connectArduino(): Promise<void> {
     gap: 1.25rem 1.5rem;
     align-items: start;
   }
-  h1, .wide {
+  h1 {
     grid-column: 1 / -1;
-  }
-  h1 { margin: 0; }
-  section {
     margin: 0;
-    padding: 0.75rem;
-    border: 1px solid var(--color-line);
-    border-radius: var(--radius);
-  }
-  h2 {
-    font-size: 0.9rem;
-    margin: 0 0 0.6rem;
-    padding-bottom: 0.3rem;
-    border-bottom: 1px solid var(--color-line);
   }
   label { display: block; font-size: 0.75rem; margin-bottom: 0.3rem; }
   input[type='range'] { display: block; width: 100%; margin: 0.1rem 0 0; }
-  .wide label { display: inline-block; margin-right: 0.5rem; }
+  .row label { display: inline-block; margin-right: 0.5rem; }
   .status {
     font-size: 2rem;
     color: var(--color-accent);
