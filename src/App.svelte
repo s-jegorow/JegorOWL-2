@@ -2,9 +2,10 @@
   import { SvelteSet } from 'svelte/reactivity';
   import * as engine from './audio/engine';
   import { DEFAULT_SETTINGS } from './audio/engine';
-  import { KEY_MAP, noteName } from './audio/notes';
+  import { KEY_MAP, OCTAVE_MIN, OCTAVE_MAX } from './audio/notes';
   import EnvelopeGraph from './components/EnvelopeGraph.svelte';
   import Oscilloscope from './components/Oscilloscope.svelte';
+  import Keyboard from './components/Keyboard.svelte';
   import Panel from './components/ui/Panel.svelte';
   import Knob from './components/ui/Knob.svelte';
   import {
@@ -21,6 +22,9 @@
   import { createControls } from './controls';
 
   const activeNotes = new SvelteSet<number>();
+  const heldKeys = new Map<string, number>();
+
+  let octave = $state(0);
 
   let settings = $state(loadLastSettings());
   let presets = $state(loadPresets());
@@ -187,28 +191,40 @@ async function connectArduino(): Promise<void> {
     const tag = (event.target as HTMLElement).tagName;
     if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
 
-    const note = KEY_MAP[event.code];
-    if (note === undefined) return;
+    if (event.code === 'KeyZ') {
+      shiftOctave(-1);
+      return;
+    }
+    if (event.code === 'KeyX') {
+      shiftOctave(1);
+      return;
+    }
 
+    const baseNote = KEY_MAP[event.code];
+    if (baseNote === undefined) return;
+
+    const note = baseNote + octave * 12;
+    heldKeys.set(event.code, note);
     startNote(note);
   }
 
   function handleKeyUp(event: KeyboardEvent): void {
-    const note = KEY_MAP[event.code];
+    const note = heldKeys.get(event.code);
     if (note === undefined) return;
 
+    heldKeys.delete(event.code);
     stopNote(note);
+  }
+
+  function shiftOctave(step: number): void {
+    octave = Math.min(OCTAVE_MAX, Math.max(OCTAVE_MIN, octave + step));
   }
 
   function releaseAllNotes(): void {
     engine.allNotesOff();
     activeNotes.clear();
+    heldKeys.clear();
   }
-
-  let activeLabel = $derived.by(() => {
-    const notes = [...activeNotes].sort((a, b) => a - b);
-    return notes.map(noteName).join(' ');
-  });
 </script>
 
 <svelte:window
@@ -220,12 +236,17 @@ async function connectArduino(): Promise<void> {
 <main>
   <h1>JegorOWL-2</h1>
 
-  <Panel span={4} rows={2}>
-    <p class="status">{activeLabel || '–'}</p>
-    <p class="hint">A S D F G H J K and W E T Z U · hold several keys for chords</p>
+  <Panel span={8} rows={2}>
+    <Keyboard
+      {activeNotes}
+      {octave}
+      onnoteon={startNote}
+      onnoteoff={stopNote}
+      onoctave={shiftOctave}
+    />
   </Panel>
 
-  <Panel span={8} rows={2}>
+  <Panel span={4} rows={2}>
     <Oscilloscope />
   </Panel>
 
@@ -388,12 +409,5 @@ async function connectArduino(): Promise<void> {
     margin-top: 0.5rem;
   }
   .row label { display: inline-block; margin-right: 0.5rem; }
-  .status {
-    font-size: 2rem;
-    color: var(--color-accent);
-    text-shadow: var(--glow-text);
-    margin: 0;
-    min-height: 2.4rem;
-  }
   .hint { font-size: 0.75rem; color: var(--color-muted); margin-top: 0; }
 </style>
