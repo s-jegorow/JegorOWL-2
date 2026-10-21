@@ -6,6 +6,7 @@
   import EnvelopeGraph from './components/EnvelopeGraph.svelte';
   import Oscilloscope from './components/Oscilloscope.svelte';
   import Panel from './components/ui/Panel.svelte';
+  import Knob from './components/ui/Knob.svelte';
   import {
     loadLastSettings,
     saveLastSettings,
@@ -296,20 +297,11 @@ async function connectArduino(): Promise<void> {
       </select>
     </label>
 
-    <label>
-      Cutoff: {settings.cutoff} Hz
-      <input type="range" min="50" max="12000" step="1" bind:value={settings.cutoff} />
-    </label>
-
-    <label>
-      Resonance: {settings.resonance}
-      <input type="range" min="0.5" max="20" step="0.1" bind:value={settings.resonance} />
-    </label>
-
-    <label>
-      Amount: {settings.filterAmount.toFixed(1)} oct
-      <input type="range" min="0" max="6" step="0.1" bind:value={settings.filterAmount} />
-    </label>
+    <div class="knobs">
+      <Knob label="Cutoff" display="{settings.cutoff} Hz" min={50} max={12000} step={1} bind:value={settings.cutoff} />
+      <Knob label="Resonance" display={settings.resonance.toFixed(1)} min={0.5} max={20} step={0.1} bind:value={settings.resonance} />
+      <Knob label="Amount" display="{settings.filterAmount.toFixed(1)} oct" min={0} max={6} step={0.1} bind:value={settings.filterAmount} />
+    </div>
 
     <EnvelopeGraph
       attack={settings.filterAttack}
@@ -318,24 +310,12 @@ async function connectArduino(): Promise<void> {
       release={settings.filterRelease}
     />
 
-    <label>
-      Attack: {settings.filterAttack.toFixed(3)} s
-      <input type="range" min="0.001" max="2" step="0.001" bind:value={settings.filterAttack} />
-    </label>
-    <label>
-      Decay: {settings.filterDecay.toFixed(2)} s
-      <input type="range" min="0" max="2" step="0.01" bind:value={settings.filterDecay} />
-    </label>
-
-    <label>
-      Sustain: {settings.filterSustain.toFixed(2)}
-      <input type="range" min="0" max="1" step="0.01" bind:value={settings.filterSustain} />
-    </label>
-
-    <label>
-      Release: {settings.filterRelease.toFixed(2)} s
-      <input type="range" min="0.01" max="3" step="0.01" bind:value={settings.filterRelease} />
-    </label>
+    <div class="knobs">
+      <Knob label="Attack" display="{settings.filterAttack.toFixed(3)} s" min={0.001} max={2} step={0.001} bind:value={settings.filterAttack} />
+      <Knob label="Decay" display="{settings.filterDecay.toFixed(2)} s" min={0} max={2} step={0.01} bind:value={settings.filterDecay} />
+      <Knob label="Sustain" display={settings.filterSustain.toFixed(2)} min={0} max={1} step={0.01} bind:value={settings.filterSustain} />
+      <Knob label="Release" display="{settings.filterRelease.toFixed(2)} s" min={0.01} max={3} step={0.01} bind:value={settings.filterRelease} />
+    </div>
   </Panel>
 
   <Panel title="Amp Envelope">
@@ -346,24 +326,12 @@ async function connectArduino(): Promise<void> {
       release={settings.release}
     />
 
-    <label>
-      Attack: {settings.attack.toFixed(3)} s
-      <input type="range" min="0.001" max="2" step="0.001" bind:value={settings.attack} />
-    </label>
-    <label>
-      Decay: {settings.decay.toFixed(2)} s
-      <input type="range" min="0" max="2" step="0.01" bind:value={settings.decay} />
-    </label>
-
-    <label>
-      Sustain: {settings.sustain.toFixed(2)}
-      <input type="range" min="0" max="1" step="0.01" bind:value={settings.sustain} />
-    </label>
-
-    <label>
-      Release: {settings.release.toFixed(2)} s
-      <input type="range" min="0.01" max="3" step="0.01" bind:value={settings.release} />
-    </label>
+    <div class="knobs">
+      <Knob label="Attack" display="{settings.attack.toFixed(3)} s" min={0.001} max={2} step={0.001} bind:value={settings.attack} />
+      <Knob label="Decay" display="{settings.decay.toFixed(2)} s" min={0} max={2} step={0.01} bind:value={settings.decay} />
+      <Knob label="Sustain" display={settings.sustain.toFixed(2)} min={0} max={1} step={0.01} bind:value={settings.sustain} />
+      <Knob label="Release" display="{settings.release.toFixed(2)} s" min={0.01} max={3} step={0.01} bind:value={settings.release} />
+    </div>
   </Panel>
 
   <Panel title="LFO">
@@ -377,61 +345,33 @@ async function connectArduino(): Promise<void> {
       </select>
     </label>
 
-    <label>
-      Rate: {settings.lfoRate.toFixed(1)} Hz
-      <input type="range" min="0.1" max="20" step="0.1" bind:value={settings.lfoRate} />
-    </label>
-
-    <label>
-      Filter Depth: {settings.lfoFilterDepth.toFixed(1)} oct
-      <input type="range" min="0" max="4" step="0.1" bind:value={settings.lfoFilterDepth} />
-    </label>
-
-    <label>
-      Pitch Depth: {settings.lfoPitchDepth} cents
-      <input type="range" min="0" max="100" step="1" bind:value={settings.lfoPitchDepth} />
-    </label>
+    <div class="knobs">
+      <Knob label="Rate" display="{settings.lfoRate.toFixed(1)} Hz" min={0.1} max={20} step={0.1} bind:value={settings.lfoRate} />
+      <Knob label="Filter" display="{settings.lfoFilterDepth.toFixed(1)} oct" min={0} max={4} step={0.1} bind:value={settings.lfoFilterDepth} />
+      <Knob label="Pitch" display="{settings.lfoPitchDepth} cents" min={0} max={100} step={1} bind:value={settings.lfoPitchDepth} />
+    </div>
   </Panel>
 
   <Panel title="Delay">
-    <label>
-      Time: {Math.round(settings.delayTime * 1000)} ms
-      <input type="range" min="0.01" max="1" step="0.01" bind:value={settings.delayTime} />
-    </label>
-
-    <label>
-      Feedback: {Math.round(settings.delayFeedback * 100)}%
-      <input type="range" min="0" max="0.9" step="0.01" bind:value={settings.delayFeedback} />
-    </label>
-
-    <label>
-      Mix: {Math.round(settings.delayMix * 100)}%
-      <input type="range" min="0" max="1" step="0.01" bind:value={settings.delayMix} />
-    </label>
+    <div class="knobs">
+      <Knob label="Time" display="{Math.round(settings.delayTime * 1000)} ms" min={0.01} max={1} step={0.01} bind:value={settings.delayTime} />
+      <Knob label="Feedback" display="{Math.round(settings.delayFeedback * 100)}%" min={0} max={0.9} step={0.01} bind:value={settings.delayFeedback} />
+      <Knob label="Mix" display="{Math.round(settings.delayMix * 100)}%" min={0} max={1} step={0.01} bind:value={settings.delayMix} />
+    </div>
   </Panel>
 
   <Panel title="Reverb">
-    <label>
-      Size: {settings.reverbSize.toFixed(1)} s
-      <input type="range" min="0.3" max="6" step="0.1" bind:value={settings.reverbSize} />
-    </label>
-
-    <label>
-      Pre-Delay: {Math.round(settings.reverbPreDelay * 1000)} ms
-      <input type="range" min="0" max="0.2" step="0.001" bind:value={settings.reverbPreDelay} />
-    </label>
-
-    <label>
-      Mix: {Math.round(settings.reverbMix * 100)}%
-      <input type="range" min="0" max="1" step="0.01" bind:value={settings.reverbMix} />
-    </label>
+    <div class="knobs">
+      <Knob label="Size" display="{settings.reverbSize.toFixed(1)} s" min={0.3} max={6} step={0.1} bind:value={settings.reverbSize} />
+      <Knob label="Pre-Delay" display="{Math.round(settings.reverbPreDelay * 1000)} ms" min={0} max={0.2} step={0.001} bind:value={settings.reverbPreDelay} />
+      <Knob label="Mix" display="{Math.round(settings.reverbMix * 100)}%" min={0} max={1} step={0.01} bind:value={settings.reverbMix} />
+    </div>
   </Panel>
 
   <Panel title="Master">
-    <label>
-      Volume: {Math.round(settings.volume * 100)}%
-      <input type="range" min="0" max="1" step="0.01" bind:value={settings.volume} />
-    </label>
+    <div class="knobs">
+      <Knob label="Volume" display="{Math.round(settings.volume * 100)}%" min={0} max={1} step={0.01} bind:value={settings.volume} />
+    </div>
   </Panel>
 </main>
 
@@ -448,7 +388,12 @@ async function connectArduino(): Promise<void> {
     margin: 0;
   }
   label { display: block; font-size: 0.75rem; margin-bottom: 0.3rem; }
-  input[type='range'] { display: block; width: 100%; margin: 0.1rem 0 0; }
+  .knobs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.25rem;
+    margin-top: 0.5rem;
+  }
   .row label { display: inline-block; margin-right: 0.5rem; }
   .status {
     font-size: 2rem;
