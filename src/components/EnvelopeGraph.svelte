@@ -38,16 +38,15 @@
   });
 </script>
 
-<svg class="envelope" viewBox="0 0 260 60">
-  <polyline {points} fill="none" stroke-width="2" />
+<svg class="envelope" viewBox="0 0 260 60" preserveAspectRatio="none">
+  <polyline {points} fill="none" stroke-width="2" vector-effect="non-scaling-stroke" />
 </svg>
 
 <style>
   .envelope {
     display: block;
     width: 100%;
-    height: auto;
-    max-width: 180px;
+    height: 2.6rem;
     background: var(--color-surface);
     border: 1px solid var(--color-line);
     margin-top: 0.5rem;

@@ -220,26 +220,126 @@ async function connectArduino(): Promise<void> {
 <main>
   <h1>JegorOWL-2</h1>
 
-  <Panel wide>
+  <Panel span={4} rows={2}>
     <p class="status">{activeLabel || '–'}</p>
     <p class="hint">A S D F G H J K and W E T Z U · hold several keys for chords</p>
   </Panel>
 
-  <Panel wide>
+  <Panel span={8} rows={2}>
     <Oscilloscope />
   </Panel>
 
-  <Panel title="MIDI">
+  <Panel title="Osc" span={4} rows={1}>
+    <label>
+      Waveform
+      <select bind:value={settings.waveform}>
+        <option value="sine">Sine</option>
+        <option value="triangle">Triangle</option>
+        <option value="square">Square</option>
+        <option value="sawtooth">Sawtooth</option>
+      </select>
+    </label>
+  </Panel>
+
+  <Panel title="Amp Envelope" span={4} rows={2}>
+    <EnvelopeGraph
+      attack={settings.attack}
+      decay={settings.decay}
+      sustain={settings.sustain}
+      release={settings.release}
+    />
+
+    <div class="knobs">
+      <Knob label="Attack" display="{settings.attack.toFixed(3)} s" min={0.001} max={2} step={0.001} bind:value={settings.attack} />
+      <Knob label="Decay" display="{settings.decay.toFixed(2)} s" min={0} max={2} step={0.01} bind:value={settings.decay} />
+      <Knob label="Sustain" display={settings.sustain.toFixed(2)} min={0} max={1} step={0.01} bind:value={settings.sustain} />
+      <Knob label="Release" display="{settings.release.toFixed(2)} s" min={0.01} max={3} step={0.01} bind:value={settings.release} />
+    </div>
+  </Panel>
+
+  <Panel title="LFO" span={4} rows={2}>
+    <label>
+      Waveform
+      <select bind:value={settings.lfoWaveform}>
+        <option value="sine">Sine</option>
+        <option value="triangle">Triangle</option>
+        <option value="square">Square</option>
+        <option value="sawtooth">Sawtooth</option>
+      </select>
+    </label>
+
+    <div class="knobs">
+      <Knob label="Rate" display="{settings.lfoRate.toFixed(1)} Hz" min={0.1} max={20} step={0.1} bind:value={settings.lfoRate} />
+      <Knob label="Filter" display="{settings.lfoFilterDepth.toFixed(1)} oct" min={0} max={4} step={0.1} bind:value={settings.lfoFilterDepth} />
+      <Knob label="Pitch" display="{settings.lfoPitchDepth} cents" min={0} max={100} step={1} bind:value={settings.lfoPitchDepth} />
+    </div>
+  </Panel>
+
+  <Panel title="Filter" span={4} rows={3}>
+    <label>
+      Type
+      <select bind:value={settings.filterType}>
+        <option value="lowpass">Lowpass</option>
+        <option value="highpass">Highpass</option>
+        <option value="bandpass">Bandpass</option>
+        <option value="notch">Notch</option>
+      </select>
+    </label>
+
+    <div class="knobs">
+      <Knob label="Cutoff" display="{settings.cutoff} Hz" min={50} max={12000} step={1} bind:value={settings.cutoff} />
+      <Knob label="Resonance" display={settings.resonance.toFixed(1)} min={0.5} max={20} step={0.1} bind:value={settings.resonance} />
+      <Knob label="Amount" display="{settings.filterAmount.toFixed(1)} oct" min={0} max={6} step={0.1} bind:value={settings.filterAmount} />
+    </div>
+
+    <EnvelopeGraph
+      attack={settings.filterAttack}
+      decay={settings.filterDecay}
+      sustain={settings.filterSustain}
+      release={settings.filterRelease}
+    />
+
+    <div class="knobs">
+      <Knob label="Attack" display="{settings.filterAttack.toFixed(3)} s" min={0.001} max={2} step={0.001} bind:value={settings.filterAttack} />
+      <Knob label="Decay" display="{settings.filterDecay.toFixed(2)} s" min={0} max={2} step={0.01} bind:value={settings.filterDecay} />
+      <Knob label="Sustain" display={settings.filterSustain.toFixed(2)} min={0} max={1} step={0.01} bind:value={settings.filterSustain} />
+      <Knob label="Release" display="{settings.filterRelease.toFixed(2)} s" min={0.01} max={3} step={0.01} bind:value={settings.filterRelease} />
+    </div>
+  </Panel>
+
+  <Panel title="Delay" span={4} rows={2}>
+    <div class="knobs">
+      <Knob label="Time" display="{Math.round(settings.delayTime * 1000)} ms" min={0.01} max={1} step={0.01} bind:value={settings.delayTime} />
+      <Knob label="Feedback" display="{Math.round(settings.delayFeedback * 100)}%" min={0} max={0.9} step={0.01} bind:value={settings.delayFeedback} />
+      <Knob label="Mix" display="{Math.round(settings.delayMix * 100)}%" min={0} max={1} step={0.01} bind:value={settings.delayMix} />
+    </div>
+  </Panel>
+
+  <Panel title="Reverb" span={4} rows={2}>
+    <div class="knobs">
+      <Knob label="Size" display="{settings.reverbSize.toFixed(1)} s" min={0.3} max={6} step={0.1} bind:value={settings.reverbSize} />
+      <Knob label="Pre-Delay" display="{Math.round(settings.reverbPreDelay * 1000)} ms" min={0} max={0.2} step={0.001} bind:value={settings.reverbPreDelay} />
+      <Knob label="Mix" display="{Math.round(settings.reverbMix * 100)}%" min={0} max={1} step={0.01} bind:value={settings.reverbMix} />
+    </div>
+  </Panel>
+
+  <Panel title="Master" span={4} rows={2}>
+    <div class="knobs">
+      <Knob label="Volume" display="{Math.round(settings.volume * 100)}%" min={0} max={1} step={0.01} bind:value={settings.volume} />
+    </div>
+  </Panel>
+
+  <Panel title="MIDI" span={4} rows={2}>
     <button onclick={enableMidi} disabled={!midiSupported || midiEnabled}>Enable MIDI</button>
     <p class="hint">{midiStatus}</p>
   </Panel>
 
-  <Panel title="Arduino">
+  <Panel title="Arduino" span={4} rows={2}>
     <button onclick={connectArduino} disabled={!serialSupported || serialConnected}>Connect Arduino</button>
     <p class="hint">{serialStatus}</p>
   </Panel>
 
-  <Panel title="Presets" wide>
+  <Panel title="Presets" span={12} rows={2}>
     <div class="row">
       <label>
         Preset
@@ -273,125 +373,18 @@ async function connectArduino(): Promise<void> {
 
     <p class="hint">{presetMessage}</p>
   </Panel>
-
-  <Panel title="Osc">
-    <label>
-      Waveform
-      <select bind:value={settings.waveform}>
-        <option value="sine">Sine</option>
-        <option value="triangle">Triangle</option>
-        <option value="square">Square</option>
-        <option value="sawtooth">Sawtooth</option>
-      </select>
-    </label>
-  </Panel>
-
-  <Panel title="Filter">
-    <label>
-      Type
-      <select bind:value={settings.filterType}>
-        <option value="lowpass">Lowpass</option>
-        <option value="highpass">Highpass</option>
-        <option value="bandpass">Bandpass</option>
-        <option value="notch">Notch</option>
-      </select>
-    </label>
-
-    <div class="knobs">
-      <Knob label="Cutoff" display="{settings.cutoff} Hz" min={50} max={12000} step={1} bind:value={settings.cutoff} />
-      <Knob label="Resonance" display={settings.resonance.toFixed(1)} min={0.5} max={20} step={0.1} bind:value={settings.resonance} />
-      <Knob label="Amount" display="{settings.filterAmount.toFixed(1)} oct" min={0} max={6} step={0.1} bind:value={settings.filterAmount} />
-    </div>
-
-    <EnvelopeGraph
-      attack={settings.filterAttack}
-      decay={settings.filterDecay}
-      sustain={settings.filterSustain}
-      release={settings.filterRelease}
-    />
-
-    <div class="knobs">
-      <Knob label="Attack" display="{settings.filterAttack.toFixed(3)} s" min={0.001} max={2} step={0.001} bind:value={settings.filterAttack} />
-      <Knob label="Decay" display="{settings.filterDecay.toFixed(2)} s" min={0} max={2} step={0.01} bind:value={settings.filterDecay} />
-      <Knob label="Sustain" display={settings.filterSustain.toFixed(2)} min={0} max={1} step={0.01} bind:value={settings.filterSustain} />
-      <Knob label="Release" display="{settings.filterRelease.toFixed(2)} s" min={0.01} max={3} step={0.01} bind:value={settings.filterRelease} />
-    </div>
-  </Panel>
-
-  <Panel title="Amp Envelope">
-    <EnvelopeGraph
-      attack={settings.attack}
-      decay={settings.decay}
-      sustain={settings.sustain}
-      release={settings.release}
-    />
-
-    <div class="knobs">
-      <Knob label="Attack" display="{settings.attack.toFixed(3)} s" min={0.001} max={2} step={0.001} bind:value={settings.attack} />
-      <Knob label="Decay" display="{settings.decay.toFixed(2)} s" min={0} max={2} step={0.01} bind:value={settings.decay} />
-      <Knob label="Sustain" display={settings.sustain.toFixed(2)} min={0} max={1} step={0.01} bind:value={settings.sustain} />
-      <Knob label="Release" display="{settings.release.toFixed(2)} s" min={0.01} max={3} step={0.01} bind:value={settings.release} />
-    </div>
-  </Panel>
-
-  <Panel title="LFO">
-    <label>
-      Waveform
-      <select bind:value={settings.lfoWaveform}>
-        <option value="sine">Sine</option>
-        <option value="triangle">Triangle</option>
-        <option value="square">Square</option>
-        <option value="sawtooth">Sawtooth</option>
-      </select>
-    </label>
-
-    <div class="knobs">
-      <Knob label="Rate" display="{settings.lfoRate.toFixed(1)} Hz" min={0.1} max={20} step={0.1} bind:value={settings.lfoRate} />
-      <Knob label="Filter" display="{settings.lfoFilterDepth.toFixed(1)} oct" min={0} max={4} step={0.1} bind:value={settings.lfoFilterDepth} />
-      <Knob label="Pitch" display="{settings.lfoPitchDepth} cents" min={0} max={100} step={1} bind:value={settings.lfoPitchDepth} />
-    </div>
-  </Panel>
-
-  <Panel title="Delay">
-    <div class="knobs">
-      <Knob label="Time" display="{Math.round(settings.delayTime * 1000)} ms" min={0.01} max={1} step={0.01} bind:value={settings.delayTime} />
-      <Knob label="Feedback" display="{Math.round(settings.delayFeedback * 100)}%" min={0} max={0.9} step={0.01} bind:value={settings.delayFeedback} />
-      <Knob label="Mix" display="{Math.round(settings.delayMix * 100)}%" min={0} max={1} step={0.01} bind:value={settings.delayMix} />
-    </div>
-  </Panel>
-
-  <Panel title="Reverb">
-    <div class="knobs">
-      <Knob label="Size" display="{settings.reverbSize.toFixed(1)} s" min={0.3} max={6} step={0.1} bind:value={settings.reverbSize} />
-      <Knob label="Pre-Delay" display="{Math.round(settings.reverbPreDelay * 1000)} ms" min={0} max={0.2} step={0.001} bind:value={settings.reverbPreDelay} />
-      <Knob label="Mix" display="{Math.round(settings.reverbMix * 100)}%" min={0} max={1} step={0.01} bind:value={settings.reverbMix} />
-    </div>
-  </Panel>
-
-  <Panel title="Master">
-    <div class="knobs">
-      <Knob label="Volume" display="{Math.round(settings.volume * 100)}%" min={0} max={1} step={0.01} bind:value={settings.volume} />
-    </div>
-  </Panel>
 </main>
 
 <style>
-  main {
-    padding: 2rem;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 1.25rem 1.5rem;
-    align-items: start;
-  }
   h1 {
     grid-column: 1 / -1;
     margin: 0;
   }
   label { display: block; font-size: 0.75rem; margin-bottom: 0.3rem; }
   .knobs {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem 0.25rem;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    justify-items: center;
     margin-top: 0.5rem;
   }
   .row label { display: inline-block; margin-right: 0.5rem; }

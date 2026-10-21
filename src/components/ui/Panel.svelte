@@ -3,14 +3,15 @@
 
   interface Props {
     title?: string;
-    wide?: boolean;
+    span: number;
+    rows: number;
     children: Snippet;
   }
 
-  let { title, wide = false, children }: Props = $props();
+  let { title, span, rows, children }: Props = $props();
 </script>
 
-<section class:wide>
+<section class="span-{span} rows-{rows}">
   {#if title}
     <h2>{title}</h2>
   {/if}
@@ -23,9 +24,6 @@
     padding: 0.75rem;
     border: 1px solid var(--color-line);
     border-radius: var(--radius);
-  }
-  .wide {
-    grid-column: 1 / -1;
   }
   h2 {
     font-size: 0.9rem;
