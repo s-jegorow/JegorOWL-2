@@ -5,10 +5,10 @@
     min: number;
     max: number;
     step: number;
-    display?: string;
+    format?: (value: number) => string;
   }
 
-  let { label, value = $bindable(), min, max, step, display }: Props = $props();
+  let { label, value = $bindable(), min, max, step, format }: Props = $props();
 
   const START_ANGLE = -135;
   const END_ANGLE = 135;
@@ -20,6 +20,7 @@
   let dragStartY = 0;
   let dragStartValue = 0;
 
+  let display = $derived(format ? format(value) : String(value));
   let angle = $derived(START_ANGLE + ((value - min) / (max - min)) * (END_ANGLE - START_ANGLE));
   let tip = $derived(pointAt(angle, 26));
 
@@ -96,7 +97,7 @@
       <line class="pointer" x1="50" y1="50" x2={tip.x} y2={tip.y} />
     </svg>
   </div>
-  <span class="value">{display ?? value}</span>
+  <span class="value">{display}</span>
 </div>
 
 <style>

@@ -52,6 +52,10 @@ button:hover:enabled,
   box-shadow: var(--glow-box);
 }
 
+button[aria-pressed='true'] {
+  box-shadow: var(--glow-box);
+}
+
 button:disabled {
   opacity: 0.4;
 }

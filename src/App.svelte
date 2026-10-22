@@ -1,25 +1,25 @@
 <script lang="ts">
   import { SvelteSet } from 'svelte/reactivity';
   import * as engine from './audio/engine';
-  import { DEFAULT_SETTINGS } from './audio/engine';
+  import type { EngineSettings } from './audio/engine';
   import { KEY_MAP, OCTAVE_MIN, OCTAVE_MAX } from './audio/notes';
   import EnvelopeGraph from './components/EnvelopeGraph.svelte';
   import Oscilloscope from './components/Oscilloscope.svelte';
   import Keyboard from './components/Keyboard.svelte';
+  import PresetManager from './components/PresetManager.svelte';
+  import ConnectionSettings from './components/ConnectionSettings.svelte';
+  import MidiMapping from './components/MidiMapping.svelte';
+  import MappableKnob from './components/MappableKnob.svelte';
   import Panel from './components/ui/Panel.svelte';
-  import Knob from './components/ui/Knob.svelte';
-  import {
-    loadLastSettings,
-    saveLastSettings,
-    loadPresets,
-    savePresets,
-    downloadPresets,
-    parsePresetFile,
-    type Preset,
-  } from './presets';
-  import { isMidiSupported, connectMidi } from './midi';
-  import { isSerialSupported, connectSerial } from './serial';
+  import Select from './components/ui/Select.svelte';
+  import Drawer from './components/ui/Drawer.svelte';
+  import { loadLastSettings, saveLastSettings } from './presets';
   import { createControls } from './controls';
+  import { WAVEFORMS, FILTER_TYPES } from './params';
+  import { midi } from './connections.svelte';
+  import { midiMapping, handleControlChange, toggleMapMode } from './midiMapping.svelte';
+
+  type DrawerName = 'presets' | 'config';
 
   const activeNotes = new SvelteSet<number>();
   const heldKeys = new Map<string, number>();
@@ -27,22 +27,9 @@
   let octave = $state(0);
 
   let settings = $state(loadLastSettings());
-  let presets = $state(loadPresets());
-
-  let selectedPreset = $state('');
-  let presetName = $state('');
-  let presetMessage = $state('');
-
-  const midiSupported = isMidiSupported();
-  let midiEnabled = $state(false);
-  let midiStatus = $state(midiSupported ? 'Not enabled' : 'Not supported in this browser');
-  
-  const serialSupported = isSerialSupported();
-  let serialConnected = $state(false);
-  let serialStatus = $state(serialSupported ? 'Not connected' : 'Not supported in this browser');
+  let openDrawer: DrawerName | null = $state(null);
 
   $effect(() => { saveLastSettings(settings); });
-  $effect(() => { savePresets(presets); });
 
   $effect(() => { engine.setWaveform(settings.waveform); });
   $effect(() => { engine.setFilterType(settings.filterType); });
@@ -74,57 +61,6 @@
   $effect(() => { engine.setReverbPreDelay(settings.reverbPreDelay); });
   $effect(() => { engine.setReverbMix(settings.reverbMix); });
 
-  function addPreset(preset: Preset): void {
-    const index = presets.findIndex((p) => p.name === preset.name);
-    if (index === -1) presets.push(preset);
-    else presets[index] = preset;
-  }
-
-  function savePreset(): void {
-    const name = presetName.trim();
-    if (name === '') return;
-
-    addPreset({ name, settings: $state.snapshot(settings) });
-    selectedPreset = name;
-    presetName = '';
-    presetMessage = `Saved "${name}"`;
-  }
-
-  function loadPreset(): void {
-    const preset = presets.find((p) => p.name === selectedPreset);
-    if (!preset) return;
-
-    Object.assign(settings, preset.settings);
-    presetMessage = `Loaded "${preset.name}"`;
-  }
-
-  function deletePreset(): void {
-    presets = presets.filter((p) => p.name !== selectedPreset);
-    presetMessage = `Deleted "${selectedPreset}"`;
-    selectedPreset = '';
-  }
-
-  function resetSettings(): void {
-    Object.assign(settings, DEFAULT_SETTINGS);
-    presetMessage = 'Back to init sound';
-  }
-
-  async function importPresets(event: Event): Promise<void> {
-    const input = event.currentTarget as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
-
-    try {
-      const imported = parsePresetFile(await file.text());
-      for (const preset of imported) addPreset(preset);
-      presetMessage = `Imported ${imported.length} presets`;
-    } catch {
-      presetMessage = 'Could not read that file';
-    }
-
-    input.value = '';
-  }
-
   function startNote(note: number, velocity = 1): void {
     engine.noteOn(note, velocity);
     activeNotes.add(note);
@@ -135,47 +71,25 @@
     activeNotes.delete(note);
   }
 
-  async function enableMidi(): Promise<void> {
-    engine.startAudio();
+  const controls = createControls({ settings, startNote, stopNote });
 
-    try {
-      await connectMidi({
-        noteOn: startNote,
-        noteOff: stopNote,
-        devicesChanged: (names) => {
-          midiStatus = names.length > 0 ? names.join(', ') : 'No device found';
-        },
-      });
-      midiEnabled = true;
-    } catch {
-      midiStatus = 'Access denied';
-    }
+  function handleControl(name: string, value: number): void {
+    const handler = controls[name];
+    if (handler) handler(value);
   }
 
-const controls = createControls({ settings, startNote, stopNote });
-
-function handleControl(name: string, value: number): void {
-  const handler = controls[name];
-  if (handler) handler(value);
-}
-
-async function connectArduino(): Promise<void> {
-  engine.startAudio();
-
-  try {
-    await connectSerial({
-      control: handleControl,
-      disconnected: () => {
-        serialConnected = false;
-        serialStatus = 'Disconnected';
-      },
-    });
-    serialConnected = true;
-    serialStatus = 'Connected';
-  } catch {
-    serialStatus = 'Could not connect';
+  function handleMidiControl(controller: number, value: number): void {
+    const mapped = handleControlChange(controller, value);
+    if (mapped) settings[mapped.key] = mapped.value;
   }
-}
+
+  function applySettings(next: EngineSettings): void {
+    Object.assign(settings, next);
+  }
+
+  function toggleDrawer(name: DrawerName): void {
+    openDrawer = openDrawer === name ? null : name;
+  }
 
 
   //fix: ignore holddown-repeat
@@ -234,7 +148,16 @@ async function connectArduino(): Promise<void> {
 />
 
 <main>
-  <h1>JegorOWL-2</h1>
+  <header>
+    <h1>JegorOWL-2</h1>
+    <div class="drawer-buttons">
+      {#if midi.connected}
+        <button onclick={toggleMapMode} aria-pressed={midiMapping.mapping}>Map</button>
+      {/if}
+      <button onclick={() => toggleDrawer('presets')} aria-pressed={openDrawer === 'presets'}>Presets</button>
+      <button onclick={() => toggleDrawer('config')} aria-pressed={openDrawer === 'config'}>Config</button>
+    </div>
+  </header>
 
   <Panel span={8} rows={2}>
     <Keyboard
@@ -251,15 +174,7 @@ async function connectArduino(): Promise<void> {
   </Panel>
 
   <Panel title="Osc" span={4} rows={1}>
-    <label>
-      Waveform
-      <select bind:value={settings.waveform}>
-        <option value="sine">Sine</option>
-        <option value="triangle">Triangle</option>
-        <option value="square">Square</option>
-        <option value="sawtooth">Sawtooth</option>
-      </select>
-    </label>
+    <Select label="Waveform" options={WAVEFORMS} bind:value={settings.waveform} />
   </Panel>
 
   <Panel title="Amp Envelope" span={4} rows={2}>
@@ -271,46 +186,30 @@ async function connectArduino(): Promise<void> {
     />
 
     <div class="knobs">
-      <Knob label="Attack" display="{settings.attack.toFixed(3)} s" min={0.001} max={2} step={0.001} bind:value={settings.attack} />
-      <Knob label="Decay" display="{settings.decay.toFixed(2)} s" min={0} max={2} step={0.01} bind:value={settings.decay} />
-      <Knob label="Sustain" display={settings.sustain.toFixed(2)} min={0} max={1} step={0.01} bind:value={settings.sustain} />
-      <Knob label="Release" display="{settings.release.toFixed(2)} s" min={0.01} max={3} step={0.01} bind:value={settings.release} />
+      <MappableKnob param="attack" bind:value={settings.attack} />
+      <MappableKnob param="decay" bind:value={settings.decay} />
+      <MappableKnob param="sustain" bind:value={settings.sustain} />
+      <MappableKnob param="release" bind:value={settings.release} />
     </div>
   </Panel>
 
   <Panel title="LFO" span={4} rows={2}>
-    <label>
-      Waveform
-      <select bind:value={settings.lfoWaveform}>
-        <option value="sine">Sine</option>
-        <option value="triangle">Triangle</option>
-        <option value="square">Square</option>
-        <option value="sawtooth">Sawtooth</option>
-      </select>
-    </label>
+    <Select label="Waveform" options={WAVEFORMS} bind:value={settings.lfoWaveform} />
 
     <div class="knobs">
-      <Knob label="Rate" display="{settings.lfoRate.toFixed(1)} Hz" min={0.1} max={20} step={0.1} bind:value={settings.lfoRate} />
-      <Knob label="Filter" display="{settings.lfoFilterDepth.toFixed(1)} oct" min={0} max={4} step={0.1} bind:value={settings.lfoFilterDepth} />
-      <Knob label="Pitch" display="{settings.lfoPitchDepth} cents" min={0} max={100} step={1} bind:value={settings.lfoPitchDepth} />
+      <MappableKnob param="lfoRate" bind:value={settings.lfoRate} />
+      <MappableKnob param="lfoFilterDepth" bind:value={settings.lfoFilterDepth} />
+      <MappableKnob param="lfoPitchDepth" bind:value={settings.lfoPitchDepth} />
     </div>
   </Panel>
 
   <Panel title="Filter" span={4} rows={3}>
-    <label>
-      Type
-      <select bind:value={settings.filterType}>
-        <option value="lowpass">Lowpass</option>
-        <option value="highpass">Highpass</option>
-        <option value="bandpass">Bandpass</option>
-        <option value="notch">Notch</option>
-      </select>
-    </label>
+    <Select label="Type" options={FILTER_TYPES} bind:value={settings.filterType} />
 
     <div class="knobs">
-      <Knob label="Cutoff" display="{settings.cutoff} Hz" min={50} max={12000} step={1} bind:value={settings.cutoff} />
-      <Knob label="Resonance" display={settings.resonance.toFixed(1)} min={0.5} max={20} step={0.1} bind:value={settings.resonance} />
-      <Knob label="Amount" display="{settings.filterAmount.toFixed(1)} oct" min={0} max={6} step={0.1} bind:value={settings.filterAmount} />
+      <MappableKnob param="cutoff" bind:value={settings.cutoff} />
+      <MappableKnob param="resonance" bind:value={settings.resonance} />
+      <MappableKnob param="filterAmount" bind:value={settings.filterAmount} />
     </div>
 
     <EnvelopeGraph
@@ -321,93 +220,70 @@ async function connectArduino(): Promise<void> {
     />
 
     <div class="knobs">
-      <Knob label="Attack" display="{settings.filterAttack.toFixed(3)} s" min={0.001} max={2} step={0.001} bind:value={settings.filterAttack} />
-      <Knob label="Decay" display="{settings.filterDecay.toFixed(2)} s" min={0} max={2} step={0.01} bind:value={settings.filterDecay} />
-      <Knob label="Sustain" display={settings.filterSustain.toFixed(2)} min={0} max={1} step={0.01} bind:value={settings.filterSustain} />
-      <Knob label="Release" display="{settings.filterRelease.toFixed(2)} s" min={0.01} max={3} step={0.01} bind:value={settings.filterRelease} />
+      <MappableKnob param="filterAttack" bind:value={settings.filterAttack} />
+      <MappableKnob param="filterDecay" bind:value={settings.filterDecay} />
+      <MappableKnob param="filterSustain" bind:value={settings.filterSustain} />
+      <MappableKnob param="filterRelease" bind:value={settings.filterRelease} />
     </div>
   </Panel>
 
   <Panel title="Delay" span={4} rows={2}>
     <div class="knobs">
-      <Knob label="Time" display="{Math.round(settings.delayTime * 1000)} ms" min={0.01} max={1} step={0.01} bind:value={settings.delayTime} />
-      <Knob label="Feedback" display="{Math.round(settings.delayFeedback * 100)}%" min={0} max={0.9} step={0.01} bind:value={settings.delayFeedback} />
-      <Knob label="Mix" display="{Math.round(settings.delayMix * 100)}%" min={0} max={1} step={0.01} bind:value={settings.delayMix} />
+      <MappableKnob param="delayTime" bind:value={settings.delayTime} />
+      <MappableKnob param="delayFeedback" bind:value={settings.delayFeedback} />
+      <MappableKnob param="delayMix" bind:value={settings.delayMix} />
     </div>
   </Panel>
 
   <Panel title="Reverb" span={4} rows={2}>
     <div class="knobs">
-      <Knob label="Size" display="{settings.reverbSize.toFixed(1)} s" min={0.3} max={6} step={0.1} bind:value={settings.reverbSize} />
-      <Knob label="Pre-Delay" display="{Math.round(settings.reverbPreDelay * 1000)} ms" min={0} max={0.2} step={0.001} bind:value={settings.reverbPreDelay} />
-      <Knob label="Mix" display="{Math.round(settings.reverbMix * 100)}%" min={0} max={1} step={0.01} bind:value={settings.reverbMix} />
+      <MappableKnob param="reverbSize" bind:value={settings.reverbSize} />
+      <MappableKnob param="reverbPreDelay" bind:value={settings.reverbPreDelay} />
+      <MappableKnob param="reverbMix" bind:value={settings.reverbMix} />
     </div>
   </Panel>
 
   <Panel title="Master" span={4} rows={2}>
     <div class="knobs">
-      <Knob label="Volume" display="{Math.round(settings.volume * 100)}%" min={0} max={1} step={0.01} bind:value={settings.volume} />
+      <MappableKnob param="volume" bind:value={settings.volume} />
     </div>
-  </Panel>
-
-  <Panel title="MIDI" span={4} rows={2}>
-    <button onclick={enableMidi} disabled={!midiSupported || midiEnabled}>Enable MIDI</button>
-    <p class="hint">{midiStatus}</p>
-  </Panel>
-
-  <Panel title="Arduino" span={4} rows={2}>
-    <button onclick={connectArduino} disabled={!serialSupported || serialConnected}>Connect Arduino</button>
-    <p class="hint">{serialStatus}</p>
-  </Panel>
-
-  <Panel title="Presets" span={12} rows={2}>
-    <div class="row">
-      <label>
-        Preset
-        <select bind:value={selectedPreset}>
-          <option value="">–</option>
-          {#each presets as preset (preset.name)}
-            <option value={preset.name}>{preset.name}</option>
-          {/each}
-        </select>
-      </label>
-      <button onclick={loadPreset} disabled={selectedPreset === ''}>Load</button>
-      <button onclick={deletePreset} disabled={selectedPreset === ''}>Delete</button>
-    </div>
-
-    <div class="row">
-      <label>
-        Name
-        <input type="text" bind:value={presetName} />
-      </label>
-      <button onclick={savePreset} disabled={presetName.trim() === ''}>Save</button>
-    </div>
-
-    <div class="row">
-      <button onclick={() => downloadPresets(presets)} disabled={presets.length === 0}>Export</button>
-      <label>
-        Import
-        <input type="file" accept=".json,application/json" onchange={importPresets} />
-      </label>
-      <button onclick={resetSettings}>Init</button>
-    </div>
-
-    <p class="hint">{presetMessage}</p>
   </Panel>
 </main>
 
+{#if openDrawer === 'presets'}
+  <Drawer title="Presets" onclose={() => (openDrawer = null)}>
+    <PresetManager {settings} onapply={applySettings} />
+  </Drawer>
+{:else if openDrawer === 'config'}
+  <Drawer title="Config" onclose={() => (openDrawer = null)}>
+    <ConnectionSettings
+      onnoteon={startNote}
+      onnoteoff={stopNote}
+      oncontrolchange={handleMidiControl}
+      oncontrol={handleControl}
+    />
+    <MidiMapping />
+  </Drawer>
+{/if}
+
 <style>
-  h1 {
+  header {
     grid-column: 1 / -1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  h1 {
     margin: 0;
   }
-  label { display: block; font-size: 0.75rem; margin-bottom: 0.3rem; }
+  .drawer-buttons {
+    display: flex;
+    gap: 0.5rem;
+  }
   .knobs {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     justify-items: center;
     margin-top: 0.5rem;
   }
-  .row label { display: inline-block; margin-right: 0.5rem; }
-  .hint { font-size: 0.75rem; color: var(--color-muted); margin-top: 0; }
 </style>

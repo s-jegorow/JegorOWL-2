@@ -1,4 +1,5 @@
 import type { EngineSettings } from './audio/engine';
+import { PARAMS } from './params';
 
 const ANALOG_MAX = 1023;
 
@@ -17,7 +18,7 @@ function scaleExponential(value: number, min: number, max: number): number {
 export function createControls(targets: ControlTargets): Record<string, ControlHandler> {
   return {
     pot1: (value) => {
-      targets.settings.cutoff = Math.round(scaleExponential(value, 50, 12000));
+      targets.settings.cutoff = Math.round(scaleExponential(value, PARAMS.cutoff.min, PARAMS.cutoff.max));
     },
     btn1: (value) => {
       if (value === 1) targets.startNote(60);
