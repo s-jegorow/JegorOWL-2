@@ -32,6 +32,9 @@
   $effect(() => { saveLastSettings(settings); });
 
   $effect(() => { engine.setWaveform(settings.waveform); });
+  $effect(() => { engine.setOsc2Waveform(settings.osc2Waveform); });
+  $effect(() => { engine.setOsc2Mix(settings.osc2Mix); });
+  $effect(() => { engine.setOsc2Detune(settings.osc2Detune); });
   $effect(() => { engine.setFilterType(settings.filterType); });
   $effect(() => { engine.setCutoff(settings.cutoff); });
   $effect(() => { engine.setResonance(settings.resonance); });
@@ -173,8 +176,42 @@
     <Oscilloscope />
   </Panel>
 
-  <Panel title="Osc" span={4} rows={1}>
-    <Select label="Waveform" options={WAVEFORMS} bind:value={settings.waveform} />
+  <Panel title="Osc" span={4} rows={2}>
+    <div class="selects">
+      <Select label="Wave 1" options={WAVEFORMS} bind:value={settings.waveform} />
+      <Select label="Wave 2" options={WAVEFORMS} bind:value={settings.osc2Waveform} />
+    </div>
+
+    <div class="knobs">
+      <MappableKnob param="osc2Mix" bind:value={settings.osc2Mix} />
+      <MappableKnob param="osc2Detune" bind:value={settings.osc2Detune} />
+    </div>
+  </Panel>
+
+  <Panel title="Filter" span={4} rows={2}>
+    <Select label="Type" options={FILTER_TYPES} bind:value={settings.filterType} />
+
+    <div class="knobs">
+      <MappableKnob param="cutoff" bind:value={settings.cutoff} />
+      <MappableKnob param="resonance" bind:value={settings.resonance} />
+      <MappableKnob param="filterAmount" bind:value={settings.filterAmount} />
+    </div>
+  </Panel>
+
+  <Panel title="Filter Envelope" span={4} rows={2}>
+    <EnvelopeGraph
+      attack={settings.filterAttack}
+      decay={settings.filterDecay}
+      sustain={settings.filterSustain}
+      release={settings.filterRelease}
+    />
+
+    <div class="knobs">
+      <MappableKnob param="filterAttack" bind:value={settings.filterAttack} />
+      <MappableKnob param="filterDecay" bind:value={settings.filterDecay} />
+      <MappableKnob param="filterSustain" bind:value={settings.filterSustain} />
+      <MappableKnob param="filterRelease" bind:value={settings.filterRelease} />
+    </div>
   </Panel>
 
   <Panel title="Amp Envelope" span={4} rows={2}>
@@ -200,30 +237,6 @@
       <MappableKnob param="lfoRate" bind:value={settings.lfoRate} />
       <MappableKnob param="lfoFilterDepth" bind:value={settings.lfoFilterDepth} />
       <MappableKnob param="lfoPitchDepth" bind:value={settings.lfoPitchDepth} />
-    </div>
-  </Panel>
-
-  <Panel title="Filter" span={4} rows={3}>
-    <Select label="Type" options={FILTER_TYPES} bind:value={settings.filterType} />
-
-    <div class="knobs">
-      <MappableKnob param="cutoff" bind:value={settings.cutoff} />
-      <MappableKnob param="resonance" bind:value={settings.resonance} />
-      <MappableKnob param="filterAmount" bind:value={settings.filterAmount} />
-    </div>
-
-    <EnvelopeGraph
-      attack={settings.filterAttack}
-      decay={settings.filterDecay}
-      sustain={settings.filterSustain}
-      release={settings.filterRelease}
-    />
-
-    <div class="knobs">
-      <MappableKnob param="filterAttack" bind:value={settings.filterAttack} />
-      <MappableKnob param="filterDecay" bind:value={settings.filterDecay} />
-      <MappableKnob param="filterSustain" bind:value={settings.filterSustain} />
-      <MappableKnob param="filterRelease" bind:value={settings.filterRelease} />
     </div>
   </Panel>
 
@@ -279,6 +292,10 @@
   .drawer-buttons {
     display: flex;
     gap: 0.5rem;
+  }
+  .selects {
+    display: flex;
+    gap: 1rem;
   }
   .knobs {
     display: grid;

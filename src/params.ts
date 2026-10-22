@@ -20,6 +20,9 @@ function milliseconds(value: number): string {
 }
 
 export const PARAMS = {
+  osc2Mix: { label: 'Mix', min: 0, max: 1, step: 0.01, format: (v) => `${Math.round((1 - v) * 100)}/${Math.round(v * 100)}` },
+  osc2Detune: { label: 'Detune', min: 0, max: 50, step: 1, format: (v) => `${v} ct` },
+
   cutoff: { label: 'Cutoff', min: 50, max: 12000, step: 1, curve: 'exp', format: (v) => `${v} Hz` },
   resonance: { label: 'Resonance', min: 0.5, max: 20, step: 0.1, format: (v) => v.toFixed(1) },
   filterAmount: { label: 'Amount', min: 0, max: 6, step: 0.1, format: (v) => `${v.toFixed(1)} oct` },
@@ -51,7 +54,9 @@ export const PARAMS = {
 export type ParamKey = keyof typeof PARAMS;
 
 export const PARAM_GROUPS: { title: string; keys: ParamKey[] }[] = [
-  { title: 'Filter', keys: ['cutoff', 'resonance', 'filterAmount', 'filterAttack', 'filterDecay', 'filterSustain', 'filterRelease'] },
+  { title: 'Osc', keys: ['osc2Mix', 'osc2Detune'] },
+  { title: 'Filter', keys: ['cutoff', 'resonance', 'filterAmount'] },
+  { title: 'Filter Envelope', keys: ['filterAttack', 'filterDecay', 'filterSustain', 'filterRelease'] },
   { title: 'Amp Envelope', keys: ['attack', 'decay', 'sustain', 'release'] },
   { title: 'LFO', keys: ['lfoRate', 'lfoFilterDepth', 'lfoPitchDepth'] },
   { title: 'Delay', keys: ['delayTime', 'delayFeedback', 'delayMix'] },

@@ -7,6 +7,9 @@ import { Lfo } from './lfo';
 
 export interface EngineSettings {
   waveform: OscillatorType;
+  osc2Waveform: OscillatorType;
+  osc2Mix: number;
+  osc2Detune: number;
   filterType: BiquadFilterType;
   cutoff: number;
   resonance: number;
@@ -34,6 +37,9 @@ export interface EngineSettings {
 
 export const DEFAULT_SETTINGS: EngineSettings = {
   waveform: 'sawtooth',
+  osc2Waveform: 'sawtooth',
+  osc2Mix: 0,
+  osc2Detune: 7,
   filterType: 'lowpass',
   cutoff: 2000,
   resonance: 1,
@@ -172,6 +178,24 @@ export function setWaveform(value: OscillatorType): void {
   settings.waveform = value;
   for (const voice of voices.values()) voice.setWaveform(value);
   for (const voice of releasing) voice.setWaveform(value); // hit the fading ones too or it sounds weird
+}
+
+export function setOsc2Waveform(value: OscillatorType): void {
+  settings.osc2Waveform = value;
+  for (const voice of voices.values()) voice.setOsc2Waveform(value);
+  for (const voice of releasing) voice.setOsc2Waveform(value);
+}
+
+export function setOsc2Mix(value: number): void {
+  settings.osc2Mix = value;
+  for (const voice of voices.values()) voice.setOsc2Mix(value);
+  for (const voice of releasing) voice.setOsc2Mix(value);
+}
+
+export function setOsc2Detune(value: number): void {
+  settings.osc2Detune = value;
+  for (const voice of voices.values()) voice.setOsc2Detune(value);
+  for (const voice of releasing) voice.setOsc2Detune(value);
 }
 
 export function setFilterType(value: BiquadFilterType): void {
