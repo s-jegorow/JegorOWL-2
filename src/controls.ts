@@ -1,5 +1,6 @@
 import type { EngineSettings } from './audio/engine';
 import { PARAMS } from './params';
+import { valueAtFraction } from './scale';
 
 const ANALOG_MAX = 1023;
 
@@ -11,14 +12,10 @@ export interface ControlTargets {
 
 export type ControlHandler = (value: number) => void;
 
-function scaleExponential(value: number, min: number, max: number): number {
-  return min * Math.pow(max / min, value / ANALOG_MAX);
-}
-
 export function createControls(targets: ControlTargets): Record<string, ControlHandler> {
   return {
     pot1: (value) => {
-      targets.settings.cutoff = Math.round(scaleExponential(value, PARAMS.cutoff.min, PARAMS.cutoff.max));
+      targets.settings.cutoff = valueAtFraction(PARAMS.cutoff, value / ANALOG_MAX);
     },
     btn1: (value) => {
       if (value === 1) targets.startNote(60);

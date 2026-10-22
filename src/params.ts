@@ -1,10 +1,8 @@
 import type { EngineSettings } from './audio/engine';
+import type { Range } from './scale';
 
-export interface NumberParam {
+export interface NumberParam extends Range {
   label: string;
-  min: number;
-  max: number;
-  step: number;
   format: (value: number) => string;
 }
 
@@ -22,20 +20,20 @@ function milliseconds(value: number): string {
 }
 
 export const PARAMS = {
-  cutoff: { label: 'Cutoff', min: 50, max: 12000, step: 1, format: (v) => `${v} Hz` },
+  cutoff: { label: 'Cutoff', min: 50, max: 12000, step: 1, curve: 'exp', format: (v) => `${v} Hz` },
   resonance: { label: 'Resonance', min: 0.5, max: 20, step: 0.1, format: (v) => v.toFixed(1) },
   filterAmount: { label: 'Amount', min: 0, max: 6, step: 0.1, format: (v) => `${v.toFixed(1)} oct` },
-  filterAttack: { label: 'Attack', min: 0.001, max: 2, step: 0.001, format: (v) => `${v.toFixed(3)} s` },
+  filterAttack: { label: 'Attack', min: 0.001, max: 2, step: 0.001, curve: 'exp', format: (v) => `${v.toFixed(3)} s` },
   filterDecay: { label: 'Decay', min: 0, max: 2, step: 0.01, format: (v) => `${v.toFixed(2)} s` },
   filterSustain: { label: 'Sustain', min: 0, max: 1, step: 0.01, format: (v) => v.toFixed(2) },
-  filterRelease: { label: 'Release', min: 0.01, max: 3, step: 0.01, format: (v) => `${v.toFixed(2)} s` },
+  filterRelease: { label: 'Release', min: 0.01, max: 3, step: 0.01, curve: 'exp', format: (v) => `${v.toFixed(2)} s` },
 
-  attack: { label: 'Attack', min: 0.001, max: 2, step: 0.001, format: (v) => `${v.toFixed(3)} s` },
+  attack: { label: 'Attack', min: 0.001, max: 2, step: 0.001, curve: 'exp', format: (v) => `${v.toFixed(3)} s` },
   decay: { label: 'Decay', min: 0, max: 2, step: 0.01, format: (v) => `${v.toFixed(2)} s` },
   sustain: { label: 'Sustain', min: 0, max: 1, step: 0.01, format: (v) => v.toFixed(2) },
-  release: { label: 'Release', min: 0.01, max: 3, step: 0.01, format: (v) => `${v.toFixed(2)} s` },
+  release: { label: 'Release', min: 0.01, max: 3, step: 0.01, curve: 'exp', format: (v) => `${v.toFixed(2)} s` },
 
-  lfoRate: { label: 'Rate', min: 0.1, max: 20, step: 0.1, format: (v) => `${v.toFixed(1)} Hz` },
+  lfoRate: { label: 'Rate', min: 0.1, max: 20, step: 0.1, curve: 'exp', format: (v) => `${v.toFixed(1)} Hz` },
   lfoFilterDepth: { label: 'Filter', min: 0, max: 4, step: 0.1, format: (v) => `${v.toFixed(1)} oct` },
   lfoPitchDepth: { label: 'Pitch', min: 0, max: 100, step: 1, format: (v) => `${v} cents` },
 
@@ -60,12 +58,6 @@ export const PARAM_GROUPS: { title: string; keys: ParamKey[] }[] = [
   { title: 'Reverb', keys: ['reverbSize', 'reverbPreDelay', 'reverbMix'] },
   { title: 'Master', keys: ['volume'] },
 ];
-
-export function valueAtFraction(param: NumberParam, fraction: number): number {
-  const raw = param.min + fraction * (param.max - param.min);
-  const snapped = param.min + Math.round((raw - param.min) / param.step) * param.step;
-  return Math.min(param.max, Math.max(param.min, snapped));
-}
 
 export const WAVEFORMS: Option<OscillatorType>[] = [
   { value: 'sine', label: 'Sine' },

@@ -1,4 +1,5 @@
-import { PARAMS, valueAtFraction, type ParamKey } from './params';
+import { PARAMS, type ParamKey } from './params';
+import { valueAtFraction } from './scale';
 
 const STORAGE_KEY = 'jegorowl2.midiMapping';
 const CC_MAX = 127;

@@ -1,14 +1,17 @@
 <script lang="ts">
+  import { snap, valueAtFraction, fractionOfValue, type Curve } from '../../scale';
+
   interface Props {
     label: string;
     value: number;
     min: number;
     max: number;
     step: number;
+    curve?: Curve;
     format?: (value: number) => string;
   }
 
-  let { label, value = $bindable(), min, max, step, format }: Props = $props();
+  let { label, value = $bindable(), min, max, step, curve, format }: Props = $props();
 
   const START_ANGLE = -135;
   const END_ANGLE = 135;
@@ -18,10 +21,12 @@
 
   let dragging = false;
   let dragStartY = 0;
-  let dragStartValue = 0;
+  let dragStartFraction = 0;
 
+  let range = $derived({ min, max, step, curve });
+  let fraction = $derived(fractionOfValue(range, value));
   let display = $derived(format ? format(value) : String(value));
-  let angle = $derived(START_ANGLE + ((value - min) / (max - min)) * (END_ANGLE - START_ANGLE));
+  let angle = $derived(START_ANGLE + fraction * (END_ANGLE - START_ANGLE));
   let tip = $derived(pointAt(angle, 26));
 
   function pointAt(degrees: number, radius: number): { x: number; y: number } {
@@ -39,34 +44,32 @@
     return `M ${start.x} ${start.y} A ${RADIUS} ${RADIUS} 0 ${largeArc} 1 ${end.x} ${end.y}`;
   }
 
-  function setValue(raw: number): void {
-    const snapped = min + Math.round((raw - min) / step) * step;
-    value = Math.min(max, Math.max(min, snapped));
-  }
-
   function handlePointerDown(event: PointerEvent): void {
     const dial = event.currentTarget as HTMLElement;
     dial.setPointerCapture(event.pointerId);
     dragging = true;
     dragStartY = event.clientY;
-    dragStartValue = value;
+    dragStartFraction = fraction;
   }
 
   function handlePointerMove(event: PointerEvent): void {
     if (!dragging) return;
     const distance = dragStartY - event.clientY;
-    setValue(dragStartValue + (distance / DRAG_PIXELS) * (max - min));
+    value = valueAtFraction(range, dragStartFraction + distance / DRAG_PIXELS);
   }
 
   function handlePointerUp(): void {
     dragging = false;
   }
 
-  function handleKeyDown(event: KeyboardEvent): void {
-    const keyStep = Math.max(step, (max - min) / KEY_STEPS);
+  function nudge(direction: number): void {
+    const next = valueAtFraction(range, fraction + direction / KEY_STEPS);
+    value = next !== value ? next : snap(range, value + direction * step);
+  }
 
-    if (event.key === 'ArrowUp' || event.key === 'ArrowRight') setValue(value + keyStep);
-    else if (event.key === 'ArrowDown' || event.key === 'ArrowLeft') setValue(value - keyStep);
+  function handleKeyDown(event: KeyboardEvent): void {
+    if (event.key === 'ArrowUp' || event.key === 'ArrowRight') nudge(1);
+    else if (event.key === 'ArrowDown' || event.key === 'ArrowLeft') nudge(-1);
     else return;
 
     event.preventDefault();
