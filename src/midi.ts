@@ -16,7 +16,7 @@ export function isMidiSupported(): boolean {
 export async function connectMidi(callbacks: MidiCallbacks): Promise<void> {
   const access = await navigator.requestMIDIAccess();
 
-  function handleMessage(event: MIDIMessageEvent): void {
+  function handleMessage(event: MIDIMessageEvent) {
     const data = event.data;
     if (!data || data.length < 3) return;
 
@@ -37,7 +37,7 @@ export async function connectMidi(callbacks: MidiCallbacks): Promise<void> {
     }
   }
 
-  function listenToInputs(): void {
+  function listenToInputs() {
     const names: string[] = [];
     for (const input of access.inputs.values()) {
       if (input.state !== 'connected') continue;

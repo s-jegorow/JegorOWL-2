@@ -16,13 +16,13 @@
 
   $effect(() => { savePresets(presets); });
 
-  function addPreset(preset: Preset): void {
+  function addPreset(preset: Preset) {
     const index = presets.findIndex((p) => p.name === preset.name);
     if (index === -1) presets.push(preset);
     else presets[index] = preset;
   }
 
-  function savePreset(): void {
+  function savePreset() {
     const name = presetName.trim();
     if (name === '') return;
 
@@ -32,7 +32,7 @@
     presetMessage = `Saved "${name}"`;
   }
 
-  function loadPreset(): void {
+  function loadPreset() {
     const preset = presets.find((p) => p.name === selectedPreset);
     if (!preset) return;
 
@@ -40,18 +40,18 @@
     presetMessage = `Loaded "${preset.name}"`;
   }
 
-  function deletePreset(): void {
+  function deletePreset() {
     presets = presets.filter((p) => p.name !== selectedPreset);
     presetMessage = `Deleted "${selectedPreset}"`;
     selectedPreset = '';
   }
 
-  function resetSettings(): void {
+  function resetSettings() {
     onapply(DEFAULT_SETTINGS);
     presetMessage = 'Reset to default sound';
   }
 
-  async function importPresets(event: Event): Promise<void> {
+  async function importPresets(event: Event) {
     const input = event.currentTarget as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;

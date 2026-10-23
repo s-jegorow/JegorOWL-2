@@ -10,7 +10,7 @@
 
   let { title, onclose, children }: Props = $props();
 
-  function handleKeyDown(event: KeyboardEvent): void {
+  function handleKeyDown(event: KeyboardEvent) {
     if (event.key === 'Escape') onclose();
   }
 </script>

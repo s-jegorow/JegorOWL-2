@@ -7,16 +7,16 @@ export interface SerialCallbacks {
 
 export function isSerialSupported(): boolean {
   return 'serial' in navigator;
-}
+  }
 
 export async function connectSerial(callbacks: SerialCallbacks): Promise<void> {
   const port = await navigator.serial.requestPort();
   await port.open({ baudRate: BAUD_RATE });
 
-  void readLines(port, callbacks);
+  readLines(port, callbacks);
 }
 
-async function readLines(port: SerialPort, callbacks: SerialCallbacks): Promise<void> {
+async function readLines(port: SerialPort, callbacks: SerialCallbacks) {
   if (!port.readable) return;
 
   const reader = port.readable.getReader();
@@ -42,7 +42,7 @@ async function readLines(port: SerialPort, callbacks: SerialCallbacks): Promise<
   }
 }
 
-function handleLine(line: string, callbacks: SerialCallbacks): void {
+function handleLine(line: string, callbacks: SerialCallbacks) {
   const [name, text] = line.trim().split(':');
   if (!name || !text) return;
 

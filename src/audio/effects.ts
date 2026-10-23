@@ -78,16 +78,18 @@ function createImpulse(ctx: BaseAudioContext, seconds: number): AudioBuffer {
   const sampleRate = ctx.sampleRate;
   const length = Math.max(1, Math.floor(sampleRate * seconds));
   const impulse = ctx.createBuffer(2, length, sampleRate);
+  // -60 db after "seconds", but as one factor per sample so we dont pow() 500k times
+  const decayPerSample = Math.pow(10, -3 / (seconds * sampleRate));
 
   for (let channel = 0; channel < 2; channel++) {
     const data = impulse.getChannelData(channel);
     let energy = 0;
+    let envelope = 1;
 
     for (let i = 0; i < length; i++) {
-      const t = i / sampleRate;
-      const envelope = Math.pow(10, (-3 * t) / seconds);
       data[i] = (Math.random() * 2 - 1) * envelope;
       energy += data[i] * data[i];
+      envelope *= decayPerSample;
     }
 
     const scale = 1 / Math.sqrt(energy);

@@ -1,14 +1,13 @@
 <script lang="ts">
   import { getAnalyser, ANALYSER_SIZE } from '../audio/engine';
 
-  const WIDTH = 520;
-  const HEIGHT = 120;
+  const WIDTH = 600;
+  const HEIGHT = 300;
   const SAMPLES_SHOWN = 1024;
 
   let canvas: HTMLCanvasElement;
 
   interface ScopeColors {
-    background: string;
     grid: string;
     line: string;
   }
@@ -17,7 +16,6 @@
   function readColors(element: HTMLElement): ScopeColors {
     const style = getComputedStyle(element);
     return {
-      background: style.getPropertyValue('--color-surface').trim(),
       grid: style.getPropertyValue('--color-line').trim(),
       line: style.getPropertyValue('--color-accent').trim(),
     };
@@ -32,9 +30,8 @@
     return 0;
   }
 
-  function draw(pen: CanvasRenderingContext2D, data: Float32Array, colors: ScopeColors): void {
-    pen.fillStyle = colors.background;
-    pen.fillRect(0, 0, WIDTH, HEIGHT);
+  function draw(pen: CanvasRenderingContext2D, data: Float32Array, colors: ScopeColors) {
+    pen.clearRect(0, 0, WIDTH, HEIGHT);
 
     pen.strokeStyle = colors.grid;
     pen.lineWidth = 1;
@@ -68,7 +65,7 @@
     const data = new Float32Array(ANALYSER_SIZE);
     let frameId = 0;
 
-    const frame = (): void => {
+    const frame = () => {
       const analyser = getAnalyser();
       if (analyser) analyser.getFloatTimeDomainData(data);
       draw(pen, data, colors);
@@ -86,7 +83,6 @@
   canvas {
     display: block;
     width: 100%;
-    height: 120px;
-    border: 1px solid var(--color-line);
+    height: 100%;
   }
 </style>

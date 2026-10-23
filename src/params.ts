@@ -1,4 +1,3 @@
-import type { EngineSettings } from './audio/engine';
 import type { Range } from './scale';
 
 export interface NumberParam extends Range {
@@ -19,7 +18,26 @@ function milliseconds(value: number): string {
   return `${Math.round(value * 1000)} ms`;
 }
 
-export const PARAMS = {
+
+
+
+
+export type ParamKey =
+  | 'osc2Mix' | 'osc2Detune'
+  | 'cutoff' | 'resonance' | 'filterAmount'
+  | 'filterAttack' | 'filterDecay' | 'filterSustain' | 'filterRelease'
+  | 'attack' | 'decay' | 'sustain' | 'release'
+  | 'lfoRate' | 'lfoFilterDepth' | 'lfoPitchDepth'
+  | 'delayTime' | 'delayFeedback' | 'delayMix'
+  | 'reverbSize' | 'reverbPreDelay' | 'reverbMix'
+  | 'volume';
+
+
+
+
+
+  
+export const PARAMS: Record<ParamKey, NumberParam> = {
   osc2Mix: { label: 'Mix', min: 0, max: 1, step: 0.01, format: (v) => `${Math.round((1 - v) * 100)}/${Math.round(v * 100)}` },
   osc2Detune: { label: 'Detune', min: 0, max: 50, step: 1, format: (v) => `${v} ct` },
 
@@ -49,9 +67,7 @@ export const PARAMS = {
   reverbMix: { label: 'Mix', min: 0, max: 1, step: 0.01, format: percent },
 
   volume: { label: 'Volume', min: 0, max: 1, step: 0.01, format: percent },
-} satisfies Partial<Record<keyof EngineSettings, NumberParam>>;
-
-export type ParamKey = keyof typeof PARAMS;
+};
 
 export const PARAM_GROUPS: { title: string; keys: ParamKey[] }[] = [
   { title: 'Osc', keys: ['osc2Mix', 'osc2Detune'] },

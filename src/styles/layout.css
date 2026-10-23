@@ -25,6 +25,7 @@ main {
 .rows-1 { grid-row: span 1; }
 .rows-2 { grid-row: span 2; }
 .rows-3 { grid-row: span 3; }
+.rows-4 { grid-row: span 4; }
 
 @media (max-width: 999px) {
   main {
@@ -35,7 +36,7 @@ main {
   .span-9, .span-10, .span-11, .span-12 {
     grid-column: span 12;
   }
-  .rows-1, .rows-2, .rows-3 {
+  .rows-1, .rows-2, .rows-3, .rows-4 {
     grid-row: auto;
   }
 }

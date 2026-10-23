@@ -13,7 +13,7 @@
   let controller = $derived(midiMapping.assignments[param]);
   let group = $derived(PARAM_GROUPS.find((g) => g.keys.includes(param))?.title ?? '');
 
-  function handleKeyDown(event: KeyboardEvent): void {
+  function handleKeyDown(event: KeyboardEvent) {
     if (event.key !== 'Backspace' && event.key !== 'Delete') return;
     clearAssignment(param);
     event.preventDefault();

@@ -140,7 +140,7 @@ export function getAnalyser(): AnalyserNode | null {
   return chain ? chain.analyser : null;
 }
 
-function releaseVoice(voice: Voice, releaseTime: number, filterReleaseTime: number): void {
+function releaseVoice(voice: Voice, releaseTime: number, filterReleaseTime: number) {
   releasing.add(voice);
   voice.onended = () => releasing.delete(voice);
   voice.release(releaseTime, filterReleaseTime);
@@ -148,12 +148,12 @@ function releaseVoice(voice: Voice, releaseTime: number, filterReleaseTime: numb
 
 export function startAudio(): void {
   const { ctx } = ensureChain();
-  if (ctx.state === 'suspended') void ctx.resume();
+  if (ctx.state === 'suspended') ctx.resume();
 }
 
 export function noteOn(note: number, velocity = 1): void {
   const { ctx, voiceBus, lfo } = ensureChain();
-  if (ctx.state === 'suspended') void ctx.resume();
+  if (ctx.state === 'suspended') ctx.resume();
   if (voices.has(note)) return; // key already down, skip
 
   const voice = new Voice(ctx, voiceBus, lfo, midiToFrequency(note), velocity, settings);

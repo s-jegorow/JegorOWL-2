@@ -20,6 +20,8 @@
 
 <style>
   section {
+    display: flex;
+    flex-direction: column;
     margin: 0;
     padding: 0.75rem;
     border: 1px solid var(--color-line);

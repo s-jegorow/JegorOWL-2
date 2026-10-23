@@ -35,11 +35,11 @@ function loadAssignments(): Assignments {
   return result;
 }
 
-function saveAssignments(): void {
+function saveAssignments() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify($state.snapshot(midiMapping.assignments)));
 }
 
-function assign(key: ParamKey, controller: number): void {
+function assign(key: ParamKey, controller: number) {
   for (const other of Object.keys(midiMapping.assignments) as ParamKey[]) {
     if (midiMapping.assignments[other] === controller) delete midiMapping.assignments[other];
   }

@@ -44,7 +44,7 @@
     return `M ${start.x} ${start.y} A ${RADIUS} ${RADIUS} 0 ${largeArc} 1 ${end.x} ${end.y}`;
   }
 
-  function handlePointerDown(event: PointerEvent): void {
+  function handlePointerDown(event: PointerEvent) {
     const dial = event.currentTarget as HTMLElement;
     dial.setPointerCapture(event.pointerId);
     dragging = true;
@@ -52,22 +52,22 @@
     dragStartFraction = fraction;
   }
 
-  function handlePointerMove(event: PointerEvent): void {
+  function handlePointerMove(event: PointerEvent) {
     if (!dragging) return;
     const distance = dragStartY - event.clientY;
     value = valueAtFraction(range, dragStartFraction + distance / DRAG_PIXELS);
   }
 
-  function handlePointerUp(): void {
+  function handlePointerUp() {
     dragging = false;
   }
 
-  function nudge(direction: number): void {
+  function nudge(direction: number) {
     const next = valueAtFraction(range, fraction + direction / KEY_STEPS);
     value = next !== value ? next : snap(range, value + direction * step);
   }
 
-  function handleKeyDown(event: KeyboardEvent): void {
+  function handleKeyDown(event: KeyboardEvent) {
     if (event.key === 'ArrowUp' || event.key === 'ArrowRight') nudge(1);
     else if (event.key === 'ArrowDown' || event.key === 'ArrowLeft') nudge(-1);
     else return;
@@ -108,7 +108,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    width: 3.75rem;
+    width: 3.5rem;
   }
   .label,
   .value {
@@ -122,8 +122,8 @@
     color: var(--color-muted);
   }
   .dial {
-    width: 3rem;
-    height: 3rem;
+    width: 2.75rem;
+    height: 2.75rem;
     border-radius: 50%;
     cursor: ns-resize;
     touch-action: none;
